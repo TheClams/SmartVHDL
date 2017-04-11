@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>name</key>
+	<string>Symbol List</string>
+	<key>scope</key>
+	<string>entity.name.section.process.begin.vhdl,entity.name.tag.vhdl,entity.name.tag.case.begin.vhdl,entity.name.tag.for.generate.begin.vhdl,entity.name.tag.if.generate.begin.vhdl,entity.name.tag.while.begin.vhdl</string>
+	<key>settings</key>
+	<dict>
+		<key>showInSymbolList</key>
+		<integer>1</integer>
+		<key>showInIndexedSymbolList</key>
+		<integer>0</integer>
+	</dict>
+</dict>
+</plist>

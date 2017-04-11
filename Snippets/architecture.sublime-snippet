@@ -1,0 +1,14 @@
+<snippet>
+  <tabTrigger>arch</tabTrigger>
+  <scope>source.vhdl</scope>
+  <content><![CDATA[
+architecture ${1:${TM_FILENAME/(.*?)(\..+)/$1/}}_arc of ${1:${TM_FILENAME/(.*?)(\..+)/$1/}} is
+
+	signal ${2:clock} $0: ${3:std_logic};
+
+begin
+
+end ${1:${TM_FILENAME/(.*?)(\..+)/$1/}}_arc;
+]]></content>
+  <description>architecture</description>
+</snippet>

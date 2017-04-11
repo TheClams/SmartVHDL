@@ -1,0 +1,9 @@
+{
+	"word_wrap": false,
+	"extensions": ["vhd", "vhdl"],
+	// Allow a dot to trigger autocomplete, except in string, comment or constant
+	// "auto_complete_triggers": [ {"selector": "source.vhdl - string - comment - constant", "characters": "."} ],
+	// Popup configuration
+	"vhdl.tooltip_hide_on_move" : true, // True to hide the tooltip when the mouse move away from the tooltip
+	"vhdl.hover_max_size" : -1 // Max size of the file (in byte) to display popup info. Set to -1 to disable the limit (default), 0 to disable feature.
+}

@@ -1,0 +1,10 @@
+<snippet>
+  <tabTrigger>wl</tabTrigger>
+  <scope>source.vhdl</scope>
+  <content><![CDATA[
+${1:identifier} : while ${2:expression} loop
+	$0
+end loop;
+]]></content>
+  <description>while loop</description>
+</snippet>

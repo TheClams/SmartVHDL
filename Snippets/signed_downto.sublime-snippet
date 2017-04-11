@@ -1,0 +1,8 @@
+<snippet>
+  <tabTrigger>s</tabTrigger>
+  <scope>source.vhdl</scope>
+  <content><![CDATA[
+signed(${1:x} downto ${2:0})$0
+]]></content>
+  <description>signed downto</description>
+</snippet>

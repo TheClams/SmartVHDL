@@ -1,0 +1,12 @@
+<snippet>
+  <tabTrigger>ent</tabTrigger>
+  <scope>source.vhdl</scope>
+  <content><![CDATA[
+entity ${1:${TM_FILENAME/(.*?)(\..+)/$1/}} is
+	port (
+		${2:clock} $0: ${3:std_logic};
+	);
+end ${1:${TM_FILENAME/(.*?)(\..+)/$1/}};
+]]></content>
+  <description>entity declaration</description>
+</snippet>

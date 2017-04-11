@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>name</key>
+	<string>Symbol List</string>
+	<key>scope</key>
+	<string>entity.name.type.entity.begin.vhdl, meta.block.architecture.begin.vhdl, entity.name.section.package.begin.vhdl, entity.name.type.type.vhdl, entity.name.section.entity_instantiation.vhdl, meta.block.function_prototype.vhdl, meta.block.function_prototype.vhdl</string>
+	<key>settings</key>
+	<dict>
+		<key>showInSymbolList</key>
+		<integer>1</integer>
+		<key>symbolTransformation</key>
+		<string>
+			s/\s*\barchitecture\s+(\w+)\s+of\s+(\w+).*/$2 : $1/g;
+			s/\s*\b(function|procedure)\s+(\w+)\b.*/$2 : decl/g;
+		</string>
+	</dict>
+</dict>
+</plist>

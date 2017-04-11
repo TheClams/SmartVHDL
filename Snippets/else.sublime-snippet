@@ -1,0 +1,9 @@
+<snippet>
+  <tabTrigger>el</tabTrigger>
+  <scope>source.vhdl</scope>
+  <content><![CDATA[
+else
+	$0
+]]></content>
+  <description>else</description>
+</snippet>

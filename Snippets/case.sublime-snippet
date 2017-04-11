@@ -1,0 +1,13 @@
+<snippet>
+  <tabTrigger>case</tabTrigger>
+  <scope>source.vhdl</scope>
+  <content><![CDATA[
+case(${1:signal_name}) is
+	when ${2:IDLE} => 
+		$0;
+	when others =>
+		null;
+end case;
+]]></content>
+  <description>case</description>
+</snippet>
