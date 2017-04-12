@@ -5,10 +5,11 @@ import functools
 
 # regular expression for signal/variable declaration:
 s_id_list = r'\w+(\s*,[\s\w,]+)?'
-re_signal = r'^\s*(?P<tag>signal|variable)\s+(?P<name>'+s_id_list+r')\s*:\s*(?P<type>[^;]+);'
-re_port   = r'^\s*(?P<name>'+s_id_list+r')\s*:\s*(?P<port>in|out|inout)\s+(?P<type>[^;]+);'
-re_const  = r'^\s*(?P<tag>constant)\s+(?P<name>'+s_id_list+r')\s*:\s*(?P<type>[\w\d\s\(\)]+)\s*:=\s*(?P<value>[^;]+);'
+re_signal = r'(?i)^\s*(?P<tag>signal|variable)\s+(?P<name>'+s_id_list+r')\s*:\s*(?P<type>[^;]+);'
+re_port   = r'(?i)^\s*(?P<name>'+s_id_list+r')\s*:\s*(?P<port>in|out|inout)\s+(?P<type>[^;]+);'
+re_const  = r'(?i)^\s*(?P<tag>constant)\s+(?P<name>'+s_id_list+r')\s*:\s*(?P<type>[\w\d\s\(\)]+)\s*:=\s*(?P<value>[^;]+);'
 
+###############################################################################
 # Clean all comment (useful before parsing file for information)
 def clean_comment(text):
     def replacer(match):
@@ -24,6 +25,7 @@ def clean_comment(text):
     )
     return re.sub(pattern, replacer, text)
 
+###############################################################################
 # Extract declaration of var_name from a file
 def get_type_info_file(fname,var_name):
     # print("Parsing file " + fname + " for variable " + var_name)
@@ -81,5 +83,30 @@ def get_type_info_from_match(var_name,m):
             ti[-1]['decl'] = 'port ' + ti[-1]['decl']
     return ti
 
+###############################################################################
+# Parse an architecture for instance information
+def get_inst_list_from_file(fname,mname=r'\w+'):
+    # print("Parsing file " + fname + " for module " + mname)
+    fdate = os.path.getmtime(fname)
+    inst_l = get_inst_list_from_file_cache(fname, mname, fdate)
+    # print(get_inst_list_from_file_cache.cache_info())
+    return inst_l
 
+@functools.lru_cache(maxsize=32)
+def get_inst_list_from_file_cache(fname, mname, fdate):
+    with open(fname) as f:
+        flines = f.read()
+        inst_l = get_inst_list(flines, mname)
+    return inst_l
 
+# Retrieve the list of instances inside a block
+def get_inst_list(txt,name):
+    txt = clean_comment(txt)
+    re_str = r'(?si)^\s*architecture\s+(\w+)\s+of\s+'+name+r'\s+is.*?end\s+(?:architecture|\1)\b'
+    # print('[get_inst_list] regexp = {}'.format(re_str))
+    m = re.search(re_str,txt,flags=re.MULTILINE)
+    if not m:
+        return []
+    l = re.findall(r'(?si)^\s*(\w+)\s*:\s*entity\s+(?:\w+\.)?(\w+)\b',m.group(0),flags=re.MULTILINE)
+    l += re.findall(r'(?si)^\s*(\w+)\s*:\s*(?:\w+\.)?(\w+)\s+(?:generic|port)\s+map\b',m.group(0),flags=re.MULTILINE)
+    return l

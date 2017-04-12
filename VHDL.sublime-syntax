@@ -132,16 +132,18 @@ contexts:
     - include: attribute_list
     - include: syntax_highlighting
   comments:
+    - include: psl
     - match: '(--).*$\n?'
       scope: comment.line.double-dash.vhdl
       captures:
         1: punctuation.definition.comment.vhdl
     - match: /\*
       captures:
-        0: punctuation.definition.comment.vhdl
+        0: punctuation.definition.comment.begin.vhdl
       push:
         - meta_scope: comment.block.vhdl
         - match: \*/
+          scope: punctuation.definition.comment.end.vhdl
           pop: true
   component_instantiation_pattern:
     - match: |-
@@ -875,6 +877,50 @@ contexts:
           pop: true
         - include: control_patterns
         - include: cleanup
+  psl:
+    - match: \s*(--)\s*(psl)\s+((\w+)\s*(:))?\s*(default|assert|assume)
+      captures:
+        0: meta.psl.vhdl
+        1: comment.line.double-dash.vhdl
+        2: keyword.psl.vhdl
+        4: entity.name.psl.vhdl
+        5: punctuation.vhdl
+        6: keyword.psl.vhdl
+      push:
+        - meta_scope: meta.psl.vhdl
+        - match: ;
+          pop: true
+        - match: \b(never|always|default|clock|within|rose|fell|stable|until|before|next|eventually|abort|posedge)\b
+          scope: keyword.psl.vhdl
+        - match: '(\+|\-|<=|=|=>|:=|>=|>|<|/|\||&|(\*{1,2}))'
+          scope: keyword.operator.psl.vhdl
+        - include: constants_numeric
+    - match: \s*(/\*)\s*(psl)
+      captures:
+        0: meta.psl.vhdl
+        1: comment.block.vhdl
+        2: keyword.psl.vhdl
+      push:
+        - meta_scope: meta.psl.vhdl
+        - match: (\*/)
+          captures:
+            1: comment.block.vhdl
+          pop: true
+        - match: ^\s*((\w+)\s*(:))?\s*(default|assert|assume)
+          captures:
+            0: meta.psl.vhdl
+            2: entity.name.psl.vhdl
+            3: punctuation.vhdl
+            4: keyword.psl.vhdl
+        - match: \b(property)\s+(\w+)
+          captures:
+            1: keyword.psl.vhdl
+            2: entity.name.psl.vhdl
+        - match: \b(never|always|default|clock|within|rose|fell|stable|until|before|next|eventually|abort|posedge|negedge)\b
+          scope: keyword.psl.vhdl
+        - match: '(\+|\-|<=|=|=>|:=|>=|>|<|/|\||&|(\*{1,2}))'
+          scope: keyword.operator.psl.vhdl
+        - include: constants_numeric
   punctuation:
     - match: (\.|,|:|;|\(|\))
       scope: punctuation.vhdl

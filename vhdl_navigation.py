@@ -5,9 +5,11 @@ from plistlib import readPlistFromBytes
 
 try:
     from SmartVHDL.util import vhdl_util
+    from SmartVHDL.util import sublime_util
 except ImportError:
     sys.path.append(os.path.join(os.path.dirname(__file__), "util"))
     import vhdl_util
+    import sublime_util
 
 ############################################################################
 # Init
@@ -16,6 +18,7 @@ tooltip_flag = 0
 
 def plugin_loaded():
     imp.reload(vhdl_util)
+    imp.reload(sublime_util)
     # Ensure the preference settings are properly reloaded when changed
     global pref_settings
     pref_settings = sublime.load_settings('Preferences.sublime-settings')
@@ -153,7 +156,7 @@ class VhdlTypePopup :
     def color_str(self,s, addLink=False, ti_var=None):
         # Split all text in word, special character, space and line return
         words = re.findall(r"\w+|[^\w\s]|\s+", s)
-        print('String = "{}" \n Split => {}'.format(s,words))
+        # print('String = "{}" \n Split => {}'.format(s,words))
         sh = ''
         idx_type = -1
         if words[0] in ['signal','variable','constant']:
@@ -185,3 +188,79 @@ class VhdlTypePopup :
         pos = sublime.Region(0,0)
         v = self.view.window().open_file(href_s[1], sublime.ENCODED_POSITION)
 
+
+############################################################################
+# Helper function to retrieve current module name based on cursor position #
+
+def getModuleName(view):
+    r = view.sel()[0]
+    # Empty selection ? get current module name
+    if r.empty():
+        re_str = r'(?s)^[ \t]*(?:entity|architecture\s+\w+\s+of)\s+(\w+\b)'
+        mname = sublime_util.find_closest(view,r,re_str)
+    else:
+        mname = view.substr(r)
+    return mname
+
+###############################################################
+# Create a new buffer showing the hierarchy of current module #
+class VhdlShowHierarchyCommand(sublime_plugin.TextCommand):
+
+    def run(self,edit):
+        mname = getModuleName(self.view)
+        if not mname:
+            return
+        txt = self.view.substr(sublime.Region(0, self.view.size()))
+        inst_l = vhdl_util.get_inst_list(txt,mname)
+        if not inst_l:
+            print('[VhdlShowHierarchyCommand] No hierarchy found !')
+            return
+        sublime.status_message("Show Hierarchy can take some time, please wait ...")
+        sublime.set_timeout_async(lambda inst_l=inst_l, w=self.view.window(), mname=mname : self.showHierarchy(w,inst_l,mname))
+
+    def showHierarchy(self,w,inst_l,mname):
+        # Create Dictionnary where each type is associated with a list of tuple (instance type, instance name)
+        self.d = {}
+        self.d[mname] = inst_l
+        li = list(set(inst_l))
+        while li:
+            li_next = []
+            for i in li:
+                inst_type = i[1]
+                if inst_type not in self.d.keys():
+                    filelist = w.lookup_symbol_in_index(inst_type)
+                    filelist = list(set([f[0] for f in filelist]))
+                    # print('Symbol {} defined in {}'.format(inst_type,[x[0] for x in filelist]))
+                    i_il = []
+                    if filelist:
+                        for f in filelist:
+                            fname = sublime_util.normalize_fname(f)
+                            i_il = vhdl_util.get_inst_list_from_file(fname,inst_type)
+                            if i_il:
+                                break
+                    if i_il:
+                        li_next += i_il
+                        self.d[inst_type] = i_il
+            li = list(set(li_next))
+
+        txt = mname + '\n'
+        txt += self.printSubmodule(mname,1)
+        v = w.new_file()
+        v.set_name(mname + ' Hierarchy')
+        v.set_syntax_file('Packages/SmartVHDL/Find Results VHDL.hidden-tmLanguage')
+        v.set_scratch(True)
+        v.run_command('insert_snippet',{'contents':str(txt)})
+
+    def printSubmodule(self,name,lvl):
+        txt = ''
+        if name in self.d:
+            # print('printSubmodule ' + str(self.d[name]))
+            for x in self.d[name]:
+                txt += '  '*lvl
+                if x[1] in self.d :
+                    txt += '+ {name}    ({type})\n'.format(name=x[0],type=x[1])
+                    if lvl<20 :
+                        txt += self.printSubmodule(x[1],lvl+1)
+                else:
+                    txt += '- {name}    ({type})\n'.format(name=x[0],type=x[1])
+        return txt

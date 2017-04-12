@@ -1,0 +1,6 @@
+[
+    {
+        "caption": "VHDL: Show Hierarchy",
+        "command": "vhdl_show_hierarchy"
+    }
+]
