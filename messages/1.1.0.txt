@@ -1,0 +1,17 @@
+SmartVHDL 1.1.0 Changelog:
+
+## New features ##
+  - Module instantiation:
+    * A new command (Instantiate Module) is now available
+
+## Improvement ##
+  - Highlighting:
+    * port of instantiated module are now highlighted (variable.parameter.port)
+    * user-defined type in port declaration are now properly highlighted
+  - Tooltip:
+    * now support ports
+
+## Bug fix ##
+  - Highlighting:
+    * Fix signal list declaration
+    * Fix component declaration with generic on same line

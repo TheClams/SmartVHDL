@@ -1,0 +1,19 @@
+{
+	"word_wrap": false,
+	"extensions": ["vhd", "vhdl"],
+	// Allow a dot to trigger autocomplete, except in string, comment or constant
+	// "auto_complete_triggers": [ {"selector": "source.vhdl - string - comment - constant", "characters": "."} ],
+	// Popup configuration
+	"vhdl.tooltip_hide_on_move" : true, // True to hide the tooltip when the mouse move away from the tooltip
+	"vhdl.hover_max_size"       : -1  , // Max size of the file (in byte) to display popup info. Set to -1 to disable the limit (default), 0 to disable feature.
+	// Module instantiation configruation
+	"vhdl.instance_prefix"         : "i_",  // Prefix to the module instantiation name
+	"vhdl.instance_suffix"         : "",    // Suffix to the module instantiation name
+	"vhdl.generic_fill"            : true,  // On module instantiation with generics user is asked a value for each generic
+	"vhdl.generic_explicit"        : false, // Control if generic settings are explicit (appears in module instantiation even when default is used)
+	"vhdl.autoconnect"             : true,  // Control if signals are created and connected in module instantiation
+	"vhdl.autoconnect_allow_prefix": true,  // True to expand search for signal to \w+_port
+	"vhdl.autoconnect_allow_suffix": true,  // True to expand search for signal to port_\w+
+	"vhdl.autoconnect_port_prefix" : [],    // List of prefix to remove from the port before looking for a signal connection
+	"vhdl.autoconnect_port_suffix" : []     // List of suffix to remove from the port before looking for a signal connection
+}

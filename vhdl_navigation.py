@@ -146,11 +146,28 @@ class VhdlTypePopup :
         scope = self.view.scope_name(region.a)
         ti = None
         txt = ''
-        # lookup for a signal/variable declaration in current file
-        lines = self.view.substr(sublime.Region(0, self.view.line(region).b))
-        ti = vhdl_util.get_type_info(lines,var_name)
-        if ti:
-            txt = ti['decl']
+        if 'variable.parameter.port' in scope:
+            if 'meta.block.entity_instantiation' in scope:
+                r_inst = sublime_util.expand_to_scope(self.view,'meta.block.entity_instantiation',region)
+            elif 'meta.block.component_instantiation' in scope:
+                r_inst = sublime_util.expand_to_scope(self.view,'meta.block.component_instantiation',region)
+            inst_txt = self.view.substr(r_inst)
+            m = re.search(r'(?si)(?:(?P<scope>\w+)\.)?(?P<mname>\w+)\s+(?:port|generic)',inst_txt)
+            if m:
+                re_str = r'(?si)(?P<type>component|entity)\s+(?P<name>'+m.group('mname')+r')\s+is\s+(?P<content>.*?)\bend\s+((?P=type)|(?P=name))'
+                info = sublime_util.lookup_symbol(self.view,m.group('mname'),re_str)
+                # print('Port {} in module {} defined in {}'.format(var_name,m.group('mname'),info))
+                # TODO: handle component
+                if info['match']:
+                    ti = vhdl_util.get_type_info(info['match'].group('content'),var_name)
+                    if ti:
+                        txt = ti['decl']
+        else :
+            # lookup for a signal/variable declaration in current file
+            lines = self.view.substr(sublime.Region(0, self.view.line(region).b))
+            ti = vhdl_util.get_type_info(lines,var_name)
+            if ti:
+                txt = ti['decl']
         return txt,ti
 
     def color_str(self,s, addLink=False, ti_var=None):
