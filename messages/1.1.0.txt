@@ -3,6 +3,7 @@ SmartVHDL 1.1.0 Changelog:
 ## New features ##
   - Module instantiation:
     * A new command (Instantiate Module) is now available
+  - Alignment: aligne port binding in a module instance
 
 ## Improvement ##
   - Highlighting:

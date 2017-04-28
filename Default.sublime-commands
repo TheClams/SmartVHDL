@@ -1,10 +1,14 @@
 [
-        {
+    {
         "caption": "VHDL: Instantiate Module",
         "command": "vhdl_module_inst"
     },
 	{
         "caption": "VHDL: Show Hierarchy",
         "command": "vhdl_show_hierarchy"
+    },
+    {
+        "caption": "VHDL: Alignment",
+        "command": "vhdl_align"
     }
 ]

@@ -40,6 +40,11 @@ You can try my personal variation of Sunburst : https://bitbucket.org/Clams/subl
  * Instantiation: Select a module from a list and create instantiation and connection
 
 
+####Code Alignement:
+
+ * Align module instantiation
+
+
 ####Configuration
 To see all existing configuration option, go to Preferences->Package Settings->SmartVHDL->Settings (Default).
 
@@ -59,6 +64,14 @@ To map key to the different feature, simply add the following to your user .subl
 			{ "key": "num_selections", "operator": "equal", "operand": 1 },
 			{ "key": "selector", "operator": "equal", "operand": "source.vhdl"}
 		]
-	}
+	},
+	{
+		"keys": ["ctrl+shift+a"], "command": "vhdl_align",
+		"context":
+		[
+			{ "key": "selector", "operator": "equal", "operand": "source.vhdl"}
+		]
+	},
+
 
 ```
