@@ -12,8 +12,8 @@
 		<integer>1</integer>
 		<key>symbolTransformation</key>
 		<string>
-			s/\s*\barchitecture\s+(\w+)\s+of\s+(\w+).*/$2 : $1/g;
-			s/\s*\b(function|procedure)\s+(\w+)\b.*/$2 : decl/g;
+			s/(?i)\s*\barchitecture\s+(\w+)\s+of\s+(\w+).*/$2 : $1/g;
+			s/(?i)\s*\b(function|procedure)\s+(\w+)\b.*/$2 : decl/g;
 		</string>
 	</dict>
 </dict>

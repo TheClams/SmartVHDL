@@ -170,11 +170,11 @@ class VhdlDoModuleInstCommand(sublime_plugin.TextCommand):
         if minfo['port'] :
             inst += '\t\tport map (\n'
             max_len_l = max([len(x['name']) for x in minfo['port']])
-            max_len_r = max([len(x) for x in ac])
+            max_len_r = 0 if not ac else max([len(x) for x in ac])
             for i,port in enumerate(minfo['port']) :
-                inst += '\t\t\t{} => {}'.format(port['name'].ljust(max_len_l), ac[port['name']].ljust(max_len_r))
+                inst += '\t\t\t{} => {}'.format(port['name'].ljust(max_len_l), '' if port['name'] not in ac else ac[port['name']].ljust(max_len_r))
                 # Remove entry of ac if it is the same as the port (to be used by the final report)
-                if ac[port['name']] == port['name']:
+                if port['name'] in ac and ac[port['name']] == port['name']:
                     ac.pop(port['name'],0)
                 if i<len(minfo['port'])-1:
                     inst +=','

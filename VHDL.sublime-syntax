@@ -416,7 +416,7 @@ contexts:
           # From the beginning of the line
           ^\s*
           # Optionnal impure keyword
-          ((?i:impure))?\s+
+          (?:((?i:impure))\s+)?
           # The word function
           ((?i:function))\s+
           (
@@ -537,6 +537,23 @@ contexts:
             0: punctuation.vhdl
           pop: true
         - include: parenthetical_list
+  hierarchical_pattern:
+    - match: (?i)(<<)\s*(signal)\b
+      captures:
+        1: keyword.operator.access.start.vhdl
+        2: keyword.language.vhdl
+      push :
+        - meta_scope: meta.block.hierarchical_access.vhdl
+        - match: (:)\s*(\w+)\s*(>>)
+          captures:
+            1 : punctuation.vhdl
+            2 : storage.type.vhdl
+            3 : keyword.operator.access.end.vhdl
+          pop : true
+        - match: '@|\^'
+          scope: keyword.operator.access.level.vhdl
+        - match: \.
+          scope: punctuation.vhdl
   tag_pattern:
     - match: ^\s*({{id}})\s*(:)\s*(?=--|$)
       captures:
@@ -776,7 +793,7 @@ contexts:
               captures:
                 0: meta.item.stopping.character.vhdl punctuation.vhdl
               pop: true
-            - match: '\b({{id}})\s*(:)\s*(in|out|inout)'
+            - match: '\b({{id}})\s*(:)\s*(in\b|out\b|inout\b)'
               captures:
                 # 1 : variable.parameter.port.vhdl
                 2 : punctuation.vhdl
@@ -1087,6 +1104,7 @@ contexts:
       scope: storage.type.ieee.math_complex.vhdl
   syntax_highlighting:
     - include: library_pattern
+    - include: hierarchical_pattern
     - include: keywords
     - include: punctuation
     - include: support_constants

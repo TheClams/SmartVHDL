@@ -1,0 +1,10 @@
+SmartVHDL 1.1.1 Changelog:
+
+## Fix ##
+  - Highlighting:
+    * Support hierarchical access (VHDL 2008) (Example: << signal top.sub.mysignal : std_logic>> )
+    * Fix case of no indentation for function definition
+    * Fix highlight of inout port declaration
+  - Architecture symbol extraction is now case insensitive
+  - Fix Module instantiation when auto connect is disabled
+
