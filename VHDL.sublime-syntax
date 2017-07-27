@@ -956,6 +956,7 @@ contexts:
             7: invalid.illegal.invalid.identifier.vhdl
           pop: true
         - include: control_patterns
+        - include: constant_pattern
         - include: cleanup
   psl:
     - match: \s*(--)\s*(psl)\s+((\w+)\s*(:))?\s*(default|assert|assume)

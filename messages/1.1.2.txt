@@ -1,0 +1,5 @@
+SmartVHDL 1.1.2 Changelog:
+
+## Fix ##
+  - Highlighting: properly highlight constant inside process
+
