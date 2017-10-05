@@ -4,8 +4,8 @@ from collections import Counter
 from plistlib import readPlistFromBytes
 
 try:
-    from SmartVHDL.util import vhdl_util
-    from SmartVHDL.util import sublime_util
+    from .util import vhdl_util
+    from .util import sublime_util
 except ImportError:
     sys.path.append(os.path.join(os.path.dirname(__file__), "util"))
     import vhdl_util
@@ -26,7 +26,7 @@ def plugin_loaded():
     pref_settings.add_on_change('reload',plugin_loaded)
     # Ensure the VHDL settings are properly reloaded when changed
     global vhdl_settings
-    vhdl_settings = sublime.load_settings('SystemVerilog.sublime-settings')
+    vhdl_settings = sublime.load_settings('VHDL.sublime-settings')
     vhdl_settings.clear_on_change('reload')
     vhdl_settings.add_on_change('reload',plugin_loaded)
     global tooltip_flag
@@ -97,7 +97,7 @@ def init_css():
 # Display type of the signal/variable under the cursor into the status bar #
 
 # Event onHover to display the popup
-class VerilogShowTypeHover(sublime_plugin.EventListener):
+class VhdlShowTypeHover(sublime_plugin.EventListener):
     def on_hover(self, view, point, hover_zone):
         # Popup only on text
         if hover_zone != sublime.HOVER_TEXT:
@@ -176,13 +176,13 @@ class VhdlTypePopup :
         # print('String = "{}" \n Split => {}'.format(s,words))
         sh = ''
         idx_type = -1
-        if words[0] in ['signal','variable','constant']:
+        if words[0].lower() in ['signal','variable','constant']:
             idx_type = 6
         elif words[0] in ['port']:
             idx_type = 8
         for i,w in enumerate(words):
             # Check for keyword
-            if w in ['signal','port','constant','array','downto','upto','of','in','out','inout']:
+            if w.lower() in ['signal','port','constant','array','downto','upto','of','in','out','inout']:
                 sh+='<span class="keyword">{0}</span>'.format(w)
             elif w in [':','-','+','=']:
                 sh+='<span class="operator">{0}</span>'.format(w)
@@ -213,7 +213,7 @@ def getModuleName(view):
     r = view.sel()[0]
     # Empty selection ? get current module name
     if r.empty():
-        re_str = r'(?s)^[ \t]*(?:entity|architecture\s+\w+\s+of)\s+(\w+\b)'
+        re_str = r'(?is)^[ \t]*(?:entity|architecture\s+\w+\s+of)\s+(\w+\b)'
         mname = sublime_util.find_closest(view,r,re_str)
     else:
         mname = view.substr(r)
@@ -226,6 +226,7 @@ class VhdlShowHierarchyCommand(sublime_plugin.TextCommand):
     def run(self,edit):
         mname = getModuleName(self.view)
         if not mname:
+            print('[VhdlShowHierarchyCommand] No entity/architecture found !')
             return
         txt = self.view.substr(sublime.Region(0, self.view.size()))
         inst_l = vhdl_util.get_inst_list(txt,mname)
@@ -264,7 +265,7 @@ class VhdlShowHierarchyCommand(sublime_plugin.TextCommand):
         txt += self.printSubmodule(mname,1)
         v = w.new_file()
         v.set_name(mname + ' Hierarchy')
-        v.set_syntax_file('Packages/SmartVHDL/Find Results VHDL.hidden-tmLanguage')
+        v.set_syntax_file('Packages/Smart VHDL/Find Results VHDL.hidden-tmLanguage')
         v.set_scratch(True)
         v.run_command('insert_snippet',{'contents':str(txt)})
 

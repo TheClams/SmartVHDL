@@ -2,8 +2,8 @@ import sublime, sublime_plugin
 import re, string, os, sys, functools, mmap, imp
 
 try:
-    from SmartVHDL.util import vhdl_util
-    from SmartVHDL.util import sublime_util
+    from .util import vhdl_util
+    from .util import sublime_util
 except ImportError:
     sys.path.append(os.path.join(os.path.dirname(__file__), "util"))
     import vhdl_util

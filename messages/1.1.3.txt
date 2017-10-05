@@ -1,0 +1,10 @@
+SmartVHDL 1.1.3 Changelog:
+
+## Fix ##
+  - General:
+   * fix missing sys import ...
+   * fix incorrect path for the hierarchy syntax file
+   * fix some verilog plugin copy-paste leftover ...
+  - Tooltip: fix highlighting of uppercase keyword
+  - Hierarchy: Fix issue with uppercase keywords
+
