@@ -1,6 +1,0 @@
-SmartVHDL 1.1.4 Changelog:
-
-## Fix ##
-  - Settings: Fix incorrect path to the settings file and
-  	use core function to open default and user file side by side
-

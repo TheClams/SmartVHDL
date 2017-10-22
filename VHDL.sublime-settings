@@ -1,6 +1,6 @@
 {
 	"word_wrap": false,
-	"extensions": ["vhd", "vhdl"],
+	"extensions": ["vhd", "vhdl","vht"],
 	// Allow a dot to trigger autocomplete, except in string, comment or constant
 	// "auto_complete_triggers": [ {"selector": "source.vhdl - string - comment - constant", "characters": "."} ],
 	// Popup configuration
@@ -15,5 +15,7 @@
 	"vhdl.autoconnect_allow_prefix": true,  // True to expand search for signal to \w+_port
 	"vhdl.autoconnect_allow_suffix": true,  // True to expand search for signal to port_\w+
 	"vhdl.autoconnect_port_prefix" : [],    // List of prefix to remove from the port before looking for a signal connection
-	"vhdl.autoconnect_port_suffix" : []     // List of suffix to remove from the port before looking for a signal connection
+	"vhdl.autoconnect_port_suffix" : [] ,   // List of suffix to remove from the port before looking for a signal connection
+	// Navigation config
+	"vhdl.hierarchy_new_window" : false  // True to open a new window to display the module hierarchy
 }

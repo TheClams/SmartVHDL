@@ -94,12 +94,13 @@ contexts:
                     )?
 
                     # The word case $5
-                    \b((?i:case))\b
+                    \b((?i:case))\b(\?)?
 
       captures:
         3: entity.name.tag.case.begin.vhdl
         4: invalid.illegal.invalid.identifier.vhdl
         5: keyword.language.vhdl
+        6: keyword.language.vhdl
       push:
         - meta_scope: meta.block.case.vhdl
         - match: |-
@@ -108,7 +109,7 @@ contexts:
                         \b((?i:end))\s*
 
                         # The word case $4 or invalid word $5
-                        (\s+(((?i:case))|(.*?)))
+                        (\s+(((?i:case\??))|(.*?)))
 
                         # Optional identifier from before $8 or illegal $9
                         (\s+((\2)|(.*?)))?
@@ -118,7 +119,7 @@ contexts:
 
           captures:
             1: keyword.language.vhdl
-            4: keyword.language.vhdl
+            4: keyword.language.case.vhdl
             5: invalid.illegal.case.required.vhdl
             8: entity.name.tag.case.end.vhdl
             9: invalid.illegal.mismatched.identifier.vhdl
@@ -298,7 +299,7 @@ contexts:
         16: punctuation.vhdl
         18: entity.name.tag.architecture.reference.vhdl
         19: invalid.illegal.invalid.identifier.vhdl
-        21: punctuation.vhdl
+        20: punctuation.vhdl
       push:
         - meta_scope: meta.block.entity_instantiation.vhdl
         - match: ;
@@ -728,8 +729,8 @@ contexts:
         - include: constant_pattern
         - include: signal_pattern
         - include: subtype_pattern
-        - include: record_pattern
         - include: component_pattern
+        - include: record_pattern
         - include: cleanup
   parenthetical_list:
     - match: \(
@@ -1032,7 +1033,6 @@ contexts:
             6: invalid.illegal.invalid.identifier.vhdl
           pop: true
         - include: cleanup
-    - include: cleanup
   strings:
     - match: "'.'"
       scope: string.quoted.single.vhdl
@@ -1084,16 +1084,16 @@ contexts:
       scope: support.function.std.env.vhdl
     - match: \b(?i:readline|(h|o)?read|writeline|(h|o)?write|endfile|endline|file_(open|close|handle))\b
       scope: support.function.std.textio.vhdl
-    - match: \b(?i:rising_edge|falling_edge|to_bit|to_bitvector|to_stdulogic|to_stdlogicvector|to_stdulogicvector|is_x)\b
+    - match: \b(?i:rising_edge|falling_edge|to_bit|to_bitvector|to_stdulogic|to_stdlogicvector|to_stdulogicvector|is_x|to_x01|to_x01z|to_ux01|to_01|to_bstring|to_binarystring|to_ostring|to_octalstring|to_hstring|to_hexstring)\b
       scope: support.function.ieee.std_logic_1164.vhdl
-    - match: \b(?i:shift_left|shift_right|rotate_left|rotate_right|resize|to_integer|to_unsigned|to_signed|std_match)\b
+    - match: \b(?i:shift_left|shift_right|rotate_left|rotate_right|resize|to_integer|to_unsigned|to_signed|std_match|minimum|maximum)\b
       scope: support.function.ieee.numeric_std.vhdl
     - match: \b(?i:arccos(h?)|arcsin(h?)|arctan|arctanh|cbrt|ceil|cos|cosh|exp|floor|log10|log2|log|realmax|realmin|round|sign|sin|sinh|sqrt|tan|tanh|trunc)\b
       scope: support.function.ieee.math_real.vhdl
     - match: \b(?i:arg|cmplx|complex_to_polar|conj|get_principal_value|polar_to_complex)\b
       scope: support.function.ieee.math_complex.vhdl
   support_types:
-    - match: \b(?i:boolean|bit|character|severity_level|integer|real|time|delay_length|now|natural|positive|string|bit_vector|file_open_kind|file_open_status|fs|ps|ns|us|ms|sec|min|hr|severity_level|note|warning|error|failure)\b
+    - match: \b(?i:boolean|bit|character|severity_level|integer|real|time|delay_length|now|natural|positive|string|bit_vector|file_open_kind|file_open_status|fs|ps|ns|us|ms|sec|min|hr|severity_level|note|warning|error|failure|boolean_vector|integer_vector|real_vector|time_vector)\b
       scope: storage.type.std.standard.vhdl
     - match: \b(?i:line|text|side|width|input|output)\b
       scope: storage.type.std.textio.vhdl

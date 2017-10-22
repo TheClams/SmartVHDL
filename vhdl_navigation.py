@@ -15,6 +15,7 @@ except ImportError:
 # Init
 tooltip_css = ''
 tooltip_flag = 0
+pluginDir = 'Smart VHDL'
 
 def plugin_loaded():
     imp.reload(vhdl_util)
@@ -34,6 +35,8 @@ def plugin_loaded():
         tooltip_flag = sublime.HIDE_ON_MOUSE_MOVE_AWAY
     else:
         tooltip_flag = 0
+    global pluginDir
+    pluginDir = (os.path.split(os.path.dirname(__file__)))[1]
     init_css()
 
 def init_css():
@@ -92,6 +95,16 @@ def init_css():
     tooltip_css+= '.string {{color: #{c:06x};}}\n'.format(c=st)
     tooltip_css+= '.extra-info {font-size: 0.9em; }\n'
 
+############################################################################
+callbacks_on_load = {}
+
+class VerilogOnLoadEventListener(sublime_plugin.EventListener):
+    # Called when a file is finished loading.
+    def on_load_async(self, view):
+        global callbacks_on_load
+        if view.file_name() in callbacks_on_load:
+            callbacks_on_load[view.file_name()]()
+            del callbacks_on_load[view.file_name()]
 
 ############################################################################
 # Display type of the signal/variable under the cursor into the status bar #
@@ -221,31 +234,43 @@ def getModuleName(view):
 
 ###############################################################
 # Create a new buffer showing the hierarchy of current module #
+hierarchyInfo = {'dict':{}, 'view':None,'fname':'', 'name':''}
+hierarchyView = None
+
 class VhdlShowHierarchyCommand(sublime_plugin.TextCommand):
 
     def run(self,edit):
         mname = getModuleName(self.view)
         if not mname:
-            print('[VhdlShowHierarchyCommand] No entity/architecture found !')
+            print('[VHDL.navigation] No entity/architecture found !')
             return
         txt = self.view.substr(sublime.Region(0, self.view.size()))
         inst_l = vhdl_util.get_inst_list(txt,mname)
         if not inst_l:
-            print('[VhdlShowHierarchyCommand] No hierarchy found !')
+            print('[VHDL.navigation] No hierarchy found !')
             return
         sublime.status_message("Show Hierarchy can take some time, please wait ...")
         sublime.set_timeout_async(lambda inst_l=inst_l, w=self.view.window(), mname=mname : self.showHierarchy(w,inst_l,mname))
 
     def showHierarchy(self,w,inst_l,mname):
+        # Save info in global for later access
+        global hierarchyInfo
+        global pluginDir
+        hierarchyInfo['dict'] = {}
+        hierarchyInfo['view'] = self.view
+        hierarchyInfo['fname'] = self.view.file_name()
+        hierarchyInfo['name'] = mname
         # Create Dictionnary where each type is associated with a list of tuple (instance type, instance name)
         self.d = {}
         self.d[mname] = inst_l
+        self.unresolved = []
+        self.component = []
         li = list(set(inst_l))
         while li:
             li_next = []
             for i in li:
                 inst_type = i[1]
-                if inst_type not in self.d.keys():
+                if inst_type not in hierarchyInfo['dict'].keys() and inst_type not in self.component:
                     filelist = w.lookup_symbol_in_index(inst_type)
                     filelist = list(set([f[0] for f in filelist]))
                     # print('Symbol {} defined in {}'.format(inst_type,[x[0] for x in filelist]))
@@ -254,18 +279,29 @@ class VhdlShowHierarchyCommand(sublime_plugin.TextCommand):
                         for f in filelist:
                             fname = sublime_util.normalize_fname(f)
                             i_il = vhdl_util.get_inst_list_from_file(fname,inst_type)
-                            if i_il:
+                            if i_il is not None:
+                                hierarchyInfo['dict'][inst_type] = fname
                                 break
+                    else :
+                        self.unresolved.append(inst_type)
                     if i_il:
                         li_next += i_il
                         self.d[inst_type] = i_il
+                    elif i_il is None :
+                        self.component.append(inst_type)
             li = list(set(li_next))
-
         txt = mname + '\n'
         txt += self.printSubmodule(mname,1)
+
+        # Check if we open the result in a new window
+        if self.view.settings().get('vhdl.hierarchy_new_window',False):
+            sublime.run_command('new_window')
+            w = sublime.active_window()
+
         v = w.new_file()
+        v.settings().set("tab_size", 2)
         v.set_name(mname + ' Hierarchy')
-        v.set_syntax_file('Packages/Smart VHDL/Find Results VHDL.hidden-tmLanguage')
+        v.set_syntax_file('Packages/{}/Find Results VHDL.hidden-tmLanguage'.format(pluginDir))
         v.set_scratch(True)
         v.run_command('insert_snippet',{'contents':str(txt)})
 
@@ -280,5 +316,90 @@ class VhdlShowHierarchyCommand(sublime_plugin.TextCommand):
                     if lvl<20 :
                         txt += self.printSubmodule(x[1],lvl+1)
                 else:
-                    txt += '- {name}    ({type})\n'.format(name=x[0],type=x[1])
+                    if x[1] in self.unresolved:
+                        comment = '  [U]'
+                    elif x[1] in self.component:
+                        comment = '  [C]'
+                    else:
+                        comment = ''
+                    txt += '- {name}    ({type}){comment}\n'.format(name=x[0],type=x[1],comment=comment)
         return txt
+
+
+# Navigate within the hierarchy
+class VhdlHierarchyGotoDefinitionCommand(sublime_plugin.TextCommand):
+
+    def run(self,edit):
+        global hierarchyInfo
+        r = self.view.sel()[0]
+        if r.empty() :
+            r = self.view.word(r)
+        scope = self.view.scope_name(r.a)
+        fname = ''
+        module_name = self.view.substr(r)
+        inst_name = ''
+        # Not in the proper file ? use standard goto_definition to
+        if 'text.result-vhdl' not in scope:
+            self.view.window().run_command('goto_definition')
+            return
+        if 'entity.name' in scope:
+            l = self.view.substr(self.view.line(r))
+            indent = (len(l) - len(l.lstrip()))-2
+            if indent<0:
+                print('[VHDL.navigation] Hierarchy buffer corrupted : Invalid position for an instance !')
+                return
+            elif indent == 0:
+                inst_name = module_name
+                module_name = hierarchyInfo['name']
+                fname = hierarchyInfo['fname']
+            else:
+                w = ''
+                # find module parent name
+                txt = self.view.substr(sublime.Region(0,r.a))
+                m = re.findall(r'^{}\+ \w+\s+\((\w+)\)'.format(' '*indent),txt,re.MULTILINE)
+                if m:
+                    inst_name = module_name
+                    module_name = m[-1]
+                    if module_name in hierarchyInfo['dict']:
+                        fname = hierarchyInfo['dict'][module_name]
+        elif 'storage.name' in scope:
+            if module_name in hierarchyInfo['dict']:
+                fname = hierarchyInfo['dict'][module_name]
+        elif 'keyword.module' in scope:
+            module_name = hierarchyInfo['name']
+            fname = hierarchyInfo['fname']
+
+        # print('Module={} instance={} (scope={}) => filename = {}'.format(module_name,inst_name,scope,fname))
+        if fname:
+            v = hierarchyInfo['view'].window().find_open_file(fname)
+            if v :
+                hierarchyInfo['view'].window().focus_view(v)
+                self.goto_symb(v,module_name,inst_name)
+            else :
+                v = hierarchyInfo['view'].window().open_file(fname)
+                global callbacks_on_load
+                callbacks_on_load[fname] = lambda v=v, module_name=module_name, inst_name=inst_name: self.goto_symb(v,module_name,inst_name)
+        else :
+            self.view.window().run_command('goto_definition')
+
+    def goto_symb(self,v,module_name,inst_name):
+        global hierarchyInfo
+        row=-1
+        if inst_name :
+            # Find instance symbol position
+            #print('[VHDL.navigation] Looking for instance {} in {}'.format(inst_name,v.symbols()))
+            for x in v.symbols() :
+                if x[1] == inst_name:
+                    row,col = v.rowcol(x[0].a)
+                    #print('[VHDL.navigation] Found at {}:{}'.format(row,col))
+                    break
+        else :
+            # Find architecture symbol position
+            #print('L[VHDL.navigation] ooking for architecture of {} in {}'.format(module_name,v.symbols()))
+            for x in v.symbols() :
+                if x[1].startswith(module_name+' :'):
+                    row,col = v.rowcol(x[0].a)
+                    # print('Found at {}:{}'.format(row,col))
+                    break
+        if row>=0:
+            sublime_util.move_cursor(v,v.text_point(row,col))

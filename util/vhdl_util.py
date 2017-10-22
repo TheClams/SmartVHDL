@@ -110,16 +110,16 @@ def get_inst_list_from_file_cache(fname, mname, fdate):
     with open(fname) as f:
         flines = f.read()
         inst_l = get_inst_list(flines, mname)
+    #if inst_l is None : print('[get_inst_list] No architecture for {} in {}'.format(mname,fname))
     return inst_l
 
 # Retrieve the list of instances inside a block
 def get_inst_list(txt,name):
     txt = clean_comment(txt)
-    re_str = r'(?si)^\s*architecture\s+(\w+)\s+of\s+'+name+r'\s+is.*?end\s+(?:architecture|\1)\b'
-    # print('[get_inst_list] regexp = {}'.format(re_str))
+    re_str = r'(?si)^\s*architecture\s+(\w+)\s+of\s+'+name+r'\s+is.*?end(?:\s+architecture\b|\s+\1\b|\s*;)'
     m = re.search(re_str,txt,flags=re.MULTILINE)
     if not m:
-        return []
+        return None
     l = re.findall(r'(?si)^\s*(\w+)\s*:\s*entity\s+(?:\w+\.)?(\w+)\b',m.group(0),flags=re.MULTILINE)
     l += re.findall(r'(?si)^\s*(\w+)\s*:\s*(?:\w+\.)?(\w+)\s+(?:generic|port)\s+map\b',m.group(0),flags=re.MULTILINE)
     return l

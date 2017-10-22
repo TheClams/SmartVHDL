@@ -72,6 +72,11 @@ To map key to the different feature, simply add the following to your user .subl
 			{ "key": "selector", "operator": "equal", "operand": "source.vhdl"}
 		]
 	},
-
+	{
+		"keys": ["f12"], "command": "vhdl_hierarchy_goto_definition",
+		"context":[
+			{ "key": "selector", "operator": "equal", "operand": "text.result-vhdl"}
+		]
+	}
 
 ```

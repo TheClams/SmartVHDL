@@ -5,7 +5,13 @@
 	<key>name</key>
 	<string>Symbol List</string>
 	<key>scope</key>
-	<string>entity.name.section.process.begin.vhdl,entity.name.tag.vhdl,entity.name.tag.case.begin.vhdl,entity.name.tag.for.generate.begin.vhdl,entity.name.tag.if.generate.begin.vhdl,entity.name.tag.while.begin.vhdl</string>
+	<string>
+		entity.name.section.process.begin.vhdl,
+		entity.name.tag.vhdl,
+		entity.name.tag.case.begin.vhdl,
+		entity.name.tag.for.generate.begin.vhdl,
+		entity.name.tag.if.generate.begin.vhdl,
+		entity.name.tag.while.begin.vhdl</string>
 	<key>settings</key>
 	<dict>
 		<key>showInSymbolList</key>
