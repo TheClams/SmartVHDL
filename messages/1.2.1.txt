@@ -1,0 +1,5 @@
+SmartVHDL 1.2.1 Changelog:
+
+## Fix ##
+  - Fix syntax naming for find results
+  - Filter out function/procedure when looking for instances

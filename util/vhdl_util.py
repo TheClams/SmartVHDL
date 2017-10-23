@@ -116,6 +116,8 @@ def get_inst_list_from_file_cache(fname, mname, fdate):
 # Retrieve the list of instances inside a block
 def get_inst_list(txt,name):
     txt = clean_comment(txt)
+    # Remove function/procedure to avoid the end;
+    txt = re.sub(r'(?si)(function|procedure)\s+(\w+).*?\bend(?:\s+\1\b|\s+\2\b|\s*;)','',txt)
     re_str = r'(?si)^\s*architecture\s+(\w+)\s+of\s+'+name+r'\s+is.*?end(?:\s+architecture\b|\s+\1\b|\s*;)'
     m = re.search(re_str,txt,flags=re.MULTILINE)
     if not m:

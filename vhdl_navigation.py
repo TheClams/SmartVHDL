@@ -15,7 +15,6 @@ except ImportError:
 # Init
 tooltip_css = ''
 tooltip_flag = 0
-pluginDir = 'Smart VHDL'
 
 def plugin_loaded():
     imp.reload(vhdl_util)
@@ -35,8 +34,6 @@ def plugin_loaded():
         tooltip_flag = sublime.HIDE_ON_MOUSE_MOVE_AWAY
     else:
         tooltip_flag = 0
-    global pluginDir
-    pluginDir = (os.path.split(os.path.dirname(__file__)))[1]
     init_css()
 
 def init_css():
@@ -255,7 +252,6 @@ class VhdlShowHierarchyCommand(sublime_plugin.TextCommand):
     def showHierarchy(self,w,inst_l,mname):
         # Save info in global for later access
         global hierarchyInfo
-        global pluginDir
         hierarchyInfo['dict'] = {}
         hierarchyInfo['view'] = self.view
         hierarchyInfo['fname'] = self.view.file_name()
@@ -301,7 +297,7 @@ class VhdlShowHierarchyCommand(sublime_plugin.TextCommand):
         v = w.new_file()
         v.settings().set("tab_size", 2)
         v.set_name(mname + ' Hierarchy')
-        v.set_syntax_file('Packages/{}/Find Results VHDL.hidden-tmLanguage'.format(pluginDir))
+        v.set_syntax_file('Packages/Smart VHDL/Find Results VHDL.hidden-tmLanguage')
         v.set_scratch(True)
         v.run_command('insert_snippet',{'contents':str(txt)})
 
@@ -313,8 +309,11 @@ class VhdlShowHierarchyCommand(sublime_plugin.TextCommand):
                 txt += '  '*lvl
                 if x[1] in self.d :
                     txt += '+ {name}    ({type})\n'.format(name=x[0],type=x[1])
-                    if lvl<20 :
+                    if lvl<32 :
                         txt += self.printSubmodule(x[1],lvl+1)
+                    else :
+                        print('[VHDL.navigation] Hierarchy with more than 20 level not supported !')
+                        return
                 else:
                     if x[1] in self.unresolved:
                         comment = '  [U]'
