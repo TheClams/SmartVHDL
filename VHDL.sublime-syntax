@@ -223,7 +223,7 @@ contexts:
   constants_numeric:
     - match: '\b([+\-]?[\d_]+\.[\d_]+([eE][+\-]?[\d_]+)?)\b'
       scope: constant.numeric.floating_point.vhdl
-    - match: '\b\d+#[\h_]+#\b'
+    - match: '\b\d+#[0-9a-fA-F_]+#'
       scope: constant.numeric.base_pound_number_pound.vhdl
     - match: '\b[\d_]+([eE][\d_]+)?\b'
       scope: constant.numeric.integer.vhdl
@@ -243,6 +243,7 @@ contexts:
     - include: case_pattern
     - include: if_pattern
     - include: for_pattern
+    - include: loop_pattern
     - include: while_pattern
   entity_instantiation_pattern:
     - match: |-
@@ -1182,6 +1183,52 @@ contexts:
         - include: cleanup
         - match: \b({{id}})\b\s*(?=;)
           scope: storage.type.userdefined.vhdl
+  loop_pattern:
+    - match: |-
+        (?x)
+          # From the beginning of the line
+          ^\s*
+          (
+            # Check for an identifier $2
+            ({{id}})
+            # Followed by a colon $3
+            \s*(:)\s*
+          )?
+          # The for keyword $4
+          \b((?i:loop))\b
+      captures:
+        2: entity.name.tag.loop.begin.vhdl
+        3: punctuation.vhdl
+        4: keyword.language.vhdl
+      push:
+        - meta_scope: meta.block.loop.vhdl
+        - match: |-
+            (?x)
+                        # The word end $1
+                        \b((?i:end))\s+
+                        (
+                          # Followed by keyword loop $3
+                           ((?i:loop))
+
+                          # But it really is required $4
+                          |(\S+)
+                        )\b
+
+                        # The matching identifier $7 or an invalid identifier $8
+                        (\s+((\2)|(.+?)))?
+
+                        # Only space and a semicolon left
+                        (?=\s*;)
+
+          captures:
+            1: keyword.language.vhdl
+            3: keyword.language.vhdl
+            4: invalid.illegal.loop.keyword.required.vhdl
+            7: entity.name.tag.loop.vhdl
+            8: invalid.illegal.mismatched.identifier
+          pop: true
+        - include: control_patterns
+        - include: cleanup
   while_pattern:
     - match: |-
         (?x)

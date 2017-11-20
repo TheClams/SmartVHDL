@@ -22,30 +22,30 @@ Future features includes code completion (for record, enum, ...), code alignemen
 Description
 -----------
 
-####Syntax Highlighting:
+#### Syntax Highlighting:
 Syntax highlighting is based on the VHDL bundle for Textmate, with a rework of scope to be aligned with the SystemVerilog plugin and some support of VHDL2008 features
 
 Note: the default color scheme (Monokai) is missing a lot of scope, and might not give the best results.
 You can try my personal variation of Sunburst : https://bitbucket.org/Clams/sublimesystemverilog/downloads/Sunburst2.tmTheme
 
 
-####Code Navigation:
+#### Code Navigation:
 
  * Show signal declaration in tooltip or status bar
  * Show hierarchy of a block (all its sub-block and their sub-block)
 
 
-####Module Instance helper:
+#### Module Instance helper:
 
  * Instantiation: Select a module from a list and create instantiation and connection
 
 
-####Code Alignement:
+#### Code Alignement:
 
  * Align module instantiation
 
 
-####Configuration
+#### Configuration
 To see all existing configuration option, go to Preferences->Package Settings->SmartVHDL->Settings (Default).
 
 To edit settings open the Settings (User), and add parameter with the value you want.

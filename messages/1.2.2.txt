@@ -1,0 +1,6 @@
+SmartVHDL 1.2.2 Changelog:
+
+## Fix ##
+  - Highlight:
+  	* Fix hexa highlight
+  	* better handling of loop statement with labels
