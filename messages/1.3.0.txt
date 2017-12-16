@@ -1,0 +1,11 @@
+SmartVHDL 1.3.0 Changelog:
+
+## Enhancement ##
+  - Navigation:
+    * Add command to find instance of the entity currently selected (or the closest one to the cursor)
+
+
+## Fix ##
+  - Navigation:
+    * Fix symbol extraction for Linux (work-around ST bug)
+    * Remove end component label from the list

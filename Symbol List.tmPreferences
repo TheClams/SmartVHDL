@@ -5,15 +5,7 @@
 	<key>name</key>
 	<string>Symbol List</string>
 	<key>scope</key>
-	<string>
-		entity.name.type.entity.begin.vhdl,
-		meta.block.architecture.begin.vhdl,
-		entity.name.section.package.begin.vhdl,
-		entity.name.type.type.vhdl,
-		entity.name.section.entity_instantiation.vhdl,
-		entity.name.section.component_instantiation.vhdl,
-		meta.block.function_prototype.vhdl
-	</string>
+	<string>entity.name.type.entity.begin.vhdl, meta.block.architecture.begin.vhdl, entity.name.section.package.begin.vhdl, entity.name.type.type.vhdl, entity.name.section.entity_instantiation.vhdl, entity.name.section.component_instantiation.vhdl, meta.block.function_prototype.vhdl</string>
 	<key>settings</key>
 	<dict>
 		<key>showInSymbolList</key>

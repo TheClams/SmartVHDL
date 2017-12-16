@@ -33,6 +33,7 @@ You can try my personal variation of Sunburst : https://bitbucket.org/Clams/subl
 
  * Show signal declaration in tooltip or status bar
  * Show hierarchy of a block (all its sub-block and their sub-block)
+ * Find Instances: find all instance of a module inside a project
 
 
 #### Module Instance helper:
@@ -67,6 +68,13 @@ To map key to the different feature, simply add the following to your user .subl
 	},
 	{
 		"keys": ["ctrl+shift+a"], "command": "vhdl_align",
+		"context":
+		[
+			{ "key": "selector", "operator": "equal", "operand": "source.vhdl"}
+		]
+	},
+	{
+		"keys": ["ctrl+alt+f"], "command": "vhdl_find_instance",
 		"context":
 		[
 			{ "key": "selector", "operator": "equal", "operand": "source.vhdl"}

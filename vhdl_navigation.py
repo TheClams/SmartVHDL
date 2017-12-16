@@ -4,6 +4,7 @@ from collections import Counter
 from plistlib import readPlistFromBytes
 
 try:
+    from . import vhdl_module
     from .util import vhdl_util
     from .util import sublime_util
 except ImportError:
@@ -402,3 +403,50 @@ class VhdlHierarchyGotoDefinitionCommand(sublime_plugin.TextCommand):
                     break
         if row>=0:
             sublime_util.move_cursor(v,v.text_point(row,col))
+
+###########################################################
+# Find all instances of current module or selected module #
+class VhdlFindInstanceCommand(sublime_plugin.TextCommand):
+
+    def run(self,edit):
+        mname = getModuleName(self.view)
+        sublime.status_message("Find Instance can take some time, please wait ...")
+        sublime.set_timeout_async(lambda x=mname: self.findInstance(x))
+
+    def findInstance(self, mname):
+        projname = sublime.active_window().project_file_name()
+        if projname not in vhdl_module.list_module_files:
+            vhdl_module.VhdlModuleInstCommand.get_list_file(None,projname,None)
+        inst_dict = {}
+        cnt = 0
+        re_str = r'(?si)^\s*(\w+)\s*:\s*(?:use\s+)?(?:entity\s+)?(\w+\.)?{}(\s*\(\s*\w+\s*\))?\s+(port|generic)'.format(mname)
+        p = re.compile(re_str,re.MULTILINE)
+        for fn in vhdl_module.list_module_files[projname]:
+            with open(fn) as f:
+                txt = f.read()
+                if mname in txt:
+                    for m in re.finditer(p,txt):
+                        cnt+=1
+                        lineno = txt.count("\n",0,m.start()+1)+1
+                        res = (m.groups()[0].strip(),lineno)
+                        if fn not in inst_dict:
+                            inst_dict[fn] = [res]
+                        else:
+                            inst_dict[fn].append(res)
+        if inst_dict:
+            v = sublime.active_window().new_file()
+            v.set_name(mname + ' Instances')
+            v.set_syntax_file('Packages/Smart VHDL/Find Results VHDL.hidden-tmLanguage')
+            v.settings().set("result_file_regex", r"^(.+):$")
+            v.settings().set("result_line_regex", r"\(line: (\d+)\)$")
+            v.set_scratch(True)
+            txt = mname + ': %0d instances.\n\n' %(cnt)
+            for (name,il) in inst_dict.items():
+                txt += name + ':\n'
+                for i in il:
+                    txt += '    - {0} (line: {1})\n'.format(i[0].strip(),i[1])
+                txt += '\n'
+            v.run_command('insert_snippet',{'contents':str(txt)})
+        else :
+            sublime.status_message("[VHDL] No instance found !")
+

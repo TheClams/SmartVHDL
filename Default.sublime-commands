@@ -8,6 +8,10 @@
         "command": "vhdl_show_hierarchy"
     },
     {
+        "caption": "VHDL: Find Instance",
+        "command": "vhdl_find_instance"
+    },
+    {
         "caption": "VHDL: Alignment",
         "command": "vhdl_align"
     }
