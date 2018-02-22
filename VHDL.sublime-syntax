@@ -546,11 +546,16 @@ contexts:
         2: keyword.language.vhdl
       push :
         - meta_scope: meta.block.hierarchical_access.vhdl
-        - match: (:)\s*(\w+)\s*(>>)
+        - match: (:)\s*(\w+)(?:\s*(\()\s*(\d+)\s+((?:down)?to)\s+(\d+)\s*(\)))?\s*(>>)
           captures:
             1 : punctuation.vhdl
             2 : storage.type.vhdl
-            3 : keyword.operator.access.end.vhdl
+            3 : punctuation.vhdl
+            4 : constant.numeric.vhdl
+            5 : keyword.language.vhdl
+            6 : constant.numeric.vhdl
+            7 : punctuation.vhdl
+            8 : keyword.operator.access.end.vhdl
           pop : true
         - match: '@|\^'
           scope: keyword.operator.access.level.vhdl
@@ -617,7 +622,7 @@ contexts:
   keywords:
     - match: '''(?i:active|ascending|base|delayed|driving|event|high|image|instance|instance_name|last|last_value|left|leftof|length|low|path|path_name|pos|pred|quiet|range|reverse|reverse_range|right|rightof|simple|simple_name|stable|succ|transaction|val|value)\b'
       scope: variable.other.member.vhdl
-    - match: \b(?i:abs|access|after|alias|all|and|architecture|array|assert|attribute|begin|block|body|buffer|bus|case|component|configuration|disconnect|downto|else|elsif|end|entity|exit|file|for|function|generate|generic|group|guarded|if|impure|in|inertial|inout|is|label|library|linkage|literal|loop|map|mod|nand|new|next|nor|not|null|of|on|open|or|others|out|package|port|postponed|procedure|process|pure|range|record|register|reject|rem|report|return|rol|ror|select|severity|shared|signal|sla|sll|sra|srl|subtype|then|to|transport|type|unaffected|units|until|use|variable|wait|when|while|with|xnor|xor)\b
+    - match: \b(?i:abs|access|after|alias|all|and|architecture|array|assert|attribute|begin|block|body|buffer|bus|case|component|configuration|constant|disconnect|downto|else|elsif|end|entity|exit|file|for|function|generate|generic|group|guarded|if|impure|in|inertial|inout|is|label|library|linkage|literal|loop|map|mod|nand|new|next|nor|not|null|of|on|open|or|others|out|package|port|postponed|procedure|process|pure|range|record|register|reject|rem|report|return|rol|ror|select|severity|shared|signal|sla|sll|sra|srl|subtype|then|to|transport|type|unaffected|units|until|use|variable|wait|when|while|with|xnor|xor)\b
       scope: keyword.language.vhdl
     - match: '(\+|\-|<=|=|=>|:=|>=|>|<|/|\||&|(\*{1,2}))'
       scope: keyword.operator.vhdl
@@ -1085,7 +1090,7 @@ contexts:
       scope: support.function.std.env.vhdl
     - match: \b(?i:readline|(h|o)?read|writeline|(h|o)?write|endfile|endline|file_(open|close|handle))\b
       scope: support.function.std.textio.vhdl
-    - match: \b(?i:rising_edge|falling_edge|to_bit|to_bitvector|to_stdulogic|to_stdlogicvector|to_stdulogicvector|is_x|to_x01|to_x01z|to_ux01|to_01|to_bstring|to_binarystring|to_ostring|to_octalstring|to_hstring|to_hexstring)\b
+    - match: \b(?i:rising_edge|falling_edge|to_bit|to_bitvector|to_stdulogic|to_stdlogicvector|to_stdulogicvector|is_x|to_x01|to_x01z|to_ux01|to_01|to_bstring|to_binarystring|to_ostring|to_octalstring|to_hstring|to_hexstring|or_reduce|and_reduce|nor_reduce|nand_reduce|xor_reduce|xnor_reduce)\b
       scope: support.function.ieee.std_logic_1164.vhdl
     - match: \b(?i:shift_left|shift_right|rotate_left|rotate_right|resize|to_integer|to_unsigned|to_signed|std_match|minimum|maximum)\b
       scope: support.function.ieee.numeric_std.vhdl
