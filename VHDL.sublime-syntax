@@ -809,10 +809,9 @@ contexts:
                 - meta_scope: meta.list.port.vhdl
                 - match: (?=;|\)|,)
                   pop: true
-                - match: '({{id}})\s*(?=;|$|\))'
+                - match: '({{id}})\s*(?=;|\(|$|\)|,|--)'
                   captures :
                     1 : storage.type.userdefined.vhdl
-                  pop: true
                 - include: comments
                 - include: parenthetical_pair
                 - include: cleanup
@@ -1186,7 +1185,7 @@ contexts:
             0: punctuation.vhdl
           pop: true
         - include: cleanup
-        - match: \b({{id}})\b\s*(?=;)
+        - match: \b({{id}})\b\s*(?=;|:=|\()
           scope: storage.type.userdefined.vhdl
   loop_pattern:
     - match: |-

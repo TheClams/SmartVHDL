@@ -21,7 +21,7 @@ def clean_comment(text):
             return " " # note: a space and not an empty string
 
     pattern = re.compile(
-        r'//.*?$|/\*.*?\*/|"(?:\\.|[^\\"])*"',
+        r'--.*?$|/\*.*?\*/|"(?:\\.|[^\\"])*"',
         re.DOTALL | re.MULTILINE
     )
     return re.sub(pattern, replacer, text)
