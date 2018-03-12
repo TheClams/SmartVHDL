@@ -163,7 +163,7 @@ contexts:
 
                     # Make sure we are just the other word, or the beginning of
                     # a generic or port mapping
-                    (?=\s*($|generic|port))
+                    (?=\s*($|--|generic|port))
 
       captures:
         1: entity.name.section.component_instantiation.vhdl
@@ -273,7 +273,7 @@ contexts:
                     (({{id}})|(.+?))
 
                     # Check to see if we are being followed by either open paren, end of line, or port or generic words
-                    (?=\s*(\(|$|(?i:port|generic)))
+                    (?=\s*(\(|$|--|(?i:port|generic)))
 
                     # Optional architecture elaboration
                     (

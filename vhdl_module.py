@@ -179,7 +179,8 @@ class VhdlDoModuleInstCommand(sublime_plugin.TextCommand):
                 if i<len(minfo['port'])-1:
                     inst +=','
                 inst += '\n'
-            inst += '\t\t);\n\n'
+            inst += '\t\t)'
+        inst += ';\n\n'
         report = ''
         # Insert code for module Instantiation
         self.view.insert(edit, self.view.line(self.view.sel()[0]).a, inst)
@@ -187,11 +188,18 @@ class VhdlDoModuleInstCommand(sublime_plugin.TextCommand):
         if decl:
             r_start = self.view.find(r'(?si)^\s*architecture\s+\w+\s+of\s+\w+\s+is(.*?)$',0, sublime.IGNORECASE)
             if r_start:
+                print('Start = {} = {} '.format(r_start,self.view.substr(r_start)))
                 # find position of last ;
-                r_end = self.view.find(r'(?si);[^;]+begin',0, sublime.IGNORECASE)
-                if r_end :
-                    # TODO check if not inside a comment ...
-                    r_start.a = r_end.a+1
+                r_begin = self.view.find(r'(?si)\bbegin\b',r_start.b, sublime.IGNORECASE)
+                r_begin2 = self.view.find(r'(?si);[^;]+\bbegin\b',r_start.b, sublime.IGNORECASE)
+                print(' -> end = {} & {}'.format(r_begin,r_begin2))
+                if r_begin2.a > 0 and r_begin2.a < r_begin.a - 1 :
+                    r_start.a = r_begin2.a+1
+                elif r_begin.a > 0 and r_start.b < r_begin.a - 1 :
+                    r_start.a = r_begin.a-1
+                else:
+                    r_start.a = r_start.b
+                print(' => Start = {}'.format(r_start))
                 self.view.insert(edit, r_start.a, '\n'+decl)
                 report += 'Declaring {} signals\n'.format(len(decl.splitlines()))
             else :
@@ -276,7 +284,7 @@ class VhdlDoModuleInstCommand(sublime_plugin.TextCommand):
             # Create a declaration when a new signal has to be created
             if not ti['decl']:
                 d,warn = self.check_connect(port,ti)
-                decl += '\t' + d # Add signal declaration with basic indentation (find local indentation ?)
+                decl += '\t{}\n'.format(d) # Add signal declaration with basic indentation (find local indentation ?)
             if warn:
                 wc[port['name']] = warn
             # Set signal name for autoconnect information

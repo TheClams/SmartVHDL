@@ -145,7 +145,7 @@ def get_ports_file_cache(fname, mname, fdate):
 
 def get_ports(flines,mname=r'\w+'):
     flines = clean_comment(flines)
-    m = re.search(r"(?si)(?P<type>entity|component)\s+(?P<name>"+mname+r")\s+is\s+(generic\s*\((?P<generic>.*?)\)\s*;\s*)?(port\s*\((?P<port>.*?)\)\s*;)\s*(?P<ending>end\b.*?);", flines, re.MULTILINE)
+    m = re.search(r"(?si)(?P<type>entity|component)\s+(?P<name>"+mname+r")\s+is\s+(generic\s*\((?P<generic>.*?)\)\s*;\s*)?(port\s*\((?P<port>.*?)\)\s*;)?\s*(?P<ending>end\b.*?);", flines, re.MULTILINE)
     if m is None:
         return None
     info = {'param': [], 'port': [], 'name':m.group('name'), 'type':m.group('type')}
