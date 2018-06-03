@@ -46,11 +46,12 @@ def get_type_info_file_cache(fname, var_name, fdate):
 #return a dictionnary with full information
 def get_type_info(txt,var_name):
     txt = clean_comment(txt)
-    txt = re.sub(r'(?si)component.*?\bend\b.*?;','',txt) # remove component declaration
-    re_list = [re_signal, re_port, re_const]
+    txt = re.sub(r'(?si)^[ \t]*component\b.*?\bend\b.*?;','',txt) # remove component declaration
+    re_list = [re_signal, re_port, re_const, re_generic]
     for s in re_list:
         re_s = s.replace(s_id_list,var_name,1) # TODO: handle case variable is part of a list
         m = re.search(re_s, txt, flags=re.MULTILINE)
+        print(re_s)
         if m:
             break
     ti = get_type_info_from_match(var_name,m)[0]
@@ -94,6 +95,7 @@ def get_type_info_from_match(var_name,m):
         # Cleanup multiple spaces
         ti[-1]['decl'] = re.sub(r'\s+',' ', ti[-1]['decl'] )
         ti[-1]['type'] = re.sub(r'\s+',' ', ti[-1]['type'])
+    #print(ti)
     return ti
 
 ###############################################################################

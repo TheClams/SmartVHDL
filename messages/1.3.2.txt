@@ -1,0 +1,11 @@
+SmartVHDL 1.3.2 Changelog:
+
+## Enhancement ##
+  - Tooltip:
+    * Add clickable link for signal declaration
+    * Now works with generic
+
+## Fix ##
+  - Highlight:
+    * Properly highlight user-defined type for variable
+    * Prevent wrong highlighting of support function inside record

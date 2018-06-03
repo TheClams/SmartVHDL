@@ -83,6 +83,7 @@ def init_css():
     tooltip_css+= 'body {{ background-color: #{bg:06x}; margin: 1px; font-size: 1em; }}\n'.format(bg=bgBody)
     tooltip_css+= 'p {padding-left: 0.6em;}\n'
     tooltip_css+= '.content {margin: 0.8em;}\n'
+    tooltip_css+= 'a {{color: #{c:06x};}}\n'.format(c=fg)
     tooltip_css+= '.keyword {{color: #{c:06x};}}\n'.format(c=kw)
     tooltip_css+= '.support {{color: #{c:06x};}}\n'.format(c=sup)
     tooltip_css+= '.storage {{color: #{c:06x};}}\n'.format(c=sto)
@@ -149,7 +150,7 @@ class VhdlTypePopup :
         if not s:
             sublime.status_message('No definition found for ' + v)
         else :
-            s = self.color_str(s,ti)
+            s = self.color_str(s,True,ti)
             s = '<style>{css}</style><div class="content">{txt}</div>'.format(css=tooltip_css, txt=s)
             self.view.show_popup(s,location=location, flags=tooltip_flag, max_width=500, on_navigate=self.on_navigate)
 
@@ -185,15 +186,23 @@ class VhdlTypePopup :
         # Split all text in word, special character, space and line return
         words = re.findall(r"\w+|[^\w\s]|\s+", s)
         # print('String = "{}" \n Split => {}'.format(s,words))
+        # print(ti_var)
         sh = ''
         idx_type = -1
+        link = ''
         if words[0].lower() in ['signal','variable','constant']:
             idx_type = 6
+            link = 'LOCAL@{}:{}'.format(words[0],words[2])
         elif words[0] in ['port']:
             idx_type = 8
+            link = 'LOCAL@{}:{}'.format(words[0],words[2])
+        elif ti_var and ti_var['tag']=='generic':
+            idx_type = 4
+            sh+='<span class="keyword">generic</span> '
+            link = 'LOCAL@{}:{}'.format(words[0],words[2])
         for i,w in enumerate(words):
             # Check for keyword
-            if w.lower() in ['signal','port','constant','array','downto','upto','of','in','out','inout']:
+            if w.lower() in ['signal','variable','constant','port','array','downto','upto','of','in','out','inout']:
                 sh+='<span class="keyword">{0}</span>'.format(w)
             elif w in [':','-','+','=']:
                 sh+='<span class="operator">{0}</span>'.format(w)
@@ -202,6 +211,9 @@ class VhdlTypePopup :
             # Type
             elif i==idx_type:
                 sh+='<span class="storage">{0}</span>'.format(w)
+            # Variable name
+            elif addLink and ti_var and link and w==ti_var['name']:
+                sh+='<a href="{}">{}</a>'.format(link,w)
             # Unknown words/characters => copy as-is
             elif not w.strip() :
                 sh += ' '
@@ -213,8 +225,17 @@ class VhdlTypePopup :
 
     def on_navigate(self, href):
         href_s = href.split('@')
-        pos = sublime.Region(0,0)
-        v = self.view.window().open_file(href_s[1], sublime.ENCODED_POSITION)
+        if href_s[0] == 'LOCAL':
+            ws = href_s[1].split(':')
+            if ws[0] == 'port' :
+                s = r'(?si)\b{}\b(,[\w\s,]+)?\s*:\s*(in|out)'.format(ws[1])
+            else :
+                s = r'(?si)^[ \t]*{}\s+[\w\s,]*\b{}\b'.format(ws[0],ws[1])
+            r = self.view.find(s,0, sublime.IGNORECASE)
+            if r:
+                sublime_util.move_cursor(self.view,r.a)
+        else :
+            v = self.view.window().open_file(href_s[1], sublime.ENCODED_POSITION)
 
 
 ############################################################################

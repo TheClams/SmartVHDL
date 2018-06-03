@@ -55,6 +55,7 @@ contexts:
         - include: type_pattern
         - include: constant_pattern
         - include: signal_pattern
+        - include: variable_pattern
         - include: record_pattern
         - include: for_pattern
         - include: entity_instantiation_pattern
@@ -473,8 +474,9 @@ contexts:
         - include: control_patterns
         - include: parenthetical_list
         - include: type_pattern
-        - include: signal_pattern
         - include: constant_pattern
+        - include: signal_pattern
+        - include: variable_pattern
         - include: record_pattern
         - include: cleanup
   function_prototype_pattern:
@@ -688,6 +690,7 @@ contexts:
         - include: type_pattern
         - include: constant_pattern
         - include: signal_pattern
+        - include: variable_pattern
         - include: subtype_pattern
         - include: record_pattern
         - include: cleanup
@@ -734,6 +737,7 @@ contexts:
         - include: type_pattern
         - include: constant_pattern
         - include: signal_pattern
+        - include: variable_pattern
         - include: subtype_pattern
         - include: component_pattern
         - include: record_pattern
@@ -900,6 +904,7 @@ contexts:
         - include: type_pattern
         - include: constant_pattern
         - include: signal_pattern
+        - include: variable_pattern
         - include: record_pattern
         - include: cleanup
   procedure_prototype_pattern:
@@ -963,6 +968,7 @@ contexts:
           pop: true
         - include: control_patterns
         - include: constant_pattern
+        - include: variable_pattern
         - include: cleanup
   psl:
     - match: \s*(--)\s*(psl)\s+((\w+)\s*(:))?\s*(default|assert|assume)
@@ -1037,7 +1043,14 @@ contexts:
             5: entity.name.type.record.vhdl
             6: invalid.illegal.invalid.identifier.vhdl
           pop: true
-        - include: cleanup
+        - include: comments
+        - include: constants_numeric
+        - include: strings
+        - include: attribute_list
+        - include: keywords
+        - include: punctuation
+        - include: support_constants
+        - include: support_types
   strings:
     - match: "'.'"
       scope: string.quoted.single.vhdl
@@ -1162,15 +1175,36 @@ contexts:
             0: punctuation.vhdl
           pop: true
         - include: cleanup
-        - match: \b({{id}})\s*(:=)
+        - match: \b({{id}})\s*(?=:=)
           captures:
             1: storage.type.userdefined.vhdl
-            2: keyword.operator.vhdl
+  variable_pattern:
+    - match: |-
+        (?x)
+          # The word type $1
+          \b((?i:variable))\s+
+          # Valid identifier $3 or invalid identifier $4
+          ((?:({{id}})(?:\s*,\s*{{id}})*)|(.+?))\s*
+          (:)
+      captures:
+        1: keyword.language.vhdl
+        4: invalid.illegal.invalid.identifier.vhdl
+        5: punctuation.vhdl
+      push:
+        - meta_scope: meta.block.variable.vhdl
+        - match: ;
+          captures:
+            0: punctuation.vhdl
+          pop: true
+        - include: cleanup
+        - match: \b({{id}})\b\s*(?=;|:=|\()
+          captures:
+            1: storage.type.userdefined.vhdl
   signal_pattern:
     - match: |-
         (?x)
           # The word type $1
-          \b((?i:signal|variable))\s+
+          \b((?i:signal))\s+
           # Valid identifier $3 or invalid identifier $4
           ((?:({{id}})(?:\s*,\s*{{id}})*)|(.+?))\s*
           (:)
@@ -1186,7 +1220,8 @@ contexts:
           pop: true
         - include: cleanup
         - match: \b({{id}})\b\s*(?=;|:=|\()
-          scope: storage.type.userdefined.vhdl
+          captures:
+            1: storage.type.userdefined.vhdl
   loop_pattern:
     - match: |-
         (?x)
