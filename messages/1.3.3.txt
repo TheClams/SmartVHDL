@@ -1,0 +1,4 @@
+SmartVHDL 1.3.3 Changelog:
+
+## Fix ##
+  - Highlight: fix hierarchical access for some cases (like constant instead of numeric in vector definition)

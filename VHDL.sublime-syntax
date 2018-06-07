@@ -548,17 +548,15 @@ contexts:
         2: keyword.language.vhdl
       push :
         - meta_scope: meta.block.hierarchical_access.vhdl
-        - match: (:)\s*(\w+)(?:\s*(\()\s*(\d+)\s+((?:down)?to)\s+(\d+)\s*(\)))?\s*(>>)
+        - match: (:)\s*(\w+)
           captures:
             1 : punctuation.vhdl
             2 : storage.type.vhdl
-            3 : punctuation.vhdl
-            4 : constant.numeric.vhdl
-            5 : keyword.language.vhdl
-            6 : constant.numeric.vhdl
-            7 : punctuation.vhdl
-            8 : keyword.operator.access.end.vhdl
-          pop : true
+          set :
+            - match: (>>)
+              scope : keyword.operator.access.end.vhdl
+              pop : true
+            - include: vector_pattern
         - match: '@|\^'
           scope: keyword.operator.access.level.vhdl
         - match: \.
@@ -1268,6 +1266,19 @@ contexts:
           pop: true
         - include: control_patterns
         - include: cleanup
+  vector_pattern:
+    - match: \(
+      captures:
+        0: punctuation.vhdl
+      push:
+        - meta_scope: meta.block.vector.vhdl
+        - match: \)
+          captures:
+            0: punctuation.vhdl
+          pop: true
+        - match: \b(down)to\b
+          scope: keyword.language.vhdl
+        - include: constants_numeric
   while_pattern:
     - match: |-
         (?x)
