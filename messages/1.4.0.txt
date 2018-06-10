@@ -1,0 +1,13 @@
+SmartVHDL 1.4.0 Changelog:
+
+## Improvement ##
+  - Auto-indent: Define more rule to handle if/loop/generate/record
+  - Alignement:
+  	* Don't remove the entity/label at end of entity declaration when doing alignement (just remove extra spaces)
+  	* Support init value in entity/component port declaration
+  	* Support component/record/signal/constant/variable declaration
+
+## Fixes ##
+  - Highlight :
+  	* Support keyword component at instantiation level
+  - Remove some debug print

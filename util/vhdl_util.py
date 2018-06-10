@@ -51,7 +51,7 @@ def get_type_info(txt,var_name):
     for s in re_list:
         re_s = s.replace(s_id_list,var_name,1) # TODO: handle case variable is part of a list
         m = re.search(re_s, txt, flags=re.MULTILINE)
-        print(re_s)
+        # print(re_s)
         if m:
             break
     ti = get_type_info_from_match(var_name,m)[0]
@@ -91,7 +91,7 @@ def get_type_info_from_match(var_name,m):
             if m.group(0).count('(') < m.group(0).count(')') :
                 ti[-1]['decl'] = ti[-1]['decl'][::-1].replace(')','',1)[::-1]
                 ti[-1]['type'] = ti[-1]['type'][::-1].replace(')','',1)[::-1]
-                print(ti[-1])
+                # print(ti[-1])
         # Cleanup multiple spaces
         ti[-1]['decl'] = re.sub(r'\s+',' ', ti[-1]['decl'] )
         ti[-1]['type'] = re.sub(r'\s+',' ', ti[-1]['type'])

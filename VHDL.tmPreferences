@@ -34,7 +34,7 @@
 		<key>decreaseIndentPattern</key>
 		<string>\s*(end)\b</string>
 		<key>increaseIndentPattern</key>
-		<string>(.*\bbegin\b)|(^\s*(entity|architecture)\b[^;]*$\b)</string>
+		<string>(.*\b(begin|then)\b)|(.*\b(generate|loop|is\s+record)\b[^;]*$)|(^\s*(entity|architecture)\b[^;]*$\b)</string>
 
 	</dict>
 </dict>

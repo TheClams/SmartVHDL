@@ -159,6 +159,9 @@ contexts:
                     # Colon! $2
                     \s*(:)\s*
 
+                    # Colon! $2
+                    (?:(component)\s+)?
+
                     # Another valid identifier $3
                     ({{id}})\b
 
@@ -169,7 +172,8 @@ contexts:
       captures:
         1: entity.name.section.component_instantiation.vhdl
         2: punctuation.vhdl
-        3: storage.type.component.reference.vhdl
+        3: keyword.language.vhdl
+        4: storage.type.component.reference.vhdl
       push:
         - meta_scope: meta.block.component_instantiation.vhdl
         - match: ;

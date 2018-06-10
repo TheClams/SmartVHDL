@@ -46,13 +46,56 @@ class VhdlAlign(sublime_plugin.TextCommand):
             txt  = self.view.substr(region)
             ilvl = self.getIndentLevel(self.view.substr(region))
             txt  = self.alignInstance(txt,ilvl)
-        elif 'meta.block.entity.vhdl' in scope:
-            region = sublime_util.expand_to_scope(self.view,'meta.block.entity',region)
+        elif 'meta.block.entity.vhdl' in scope or 'meta.block.component.vhdl' in scope:
+            if 'meta.block.entity.vhdl' in scope :
+                region = sublime_util.expand_to_scope(self.view,'meta.block.entity',region)
+            else :
+                region = sublime_util.expand_to_scope(self.view,'meta.block.component',region)
             # Make sure to get complete line to be able to get initial indentation
             region = self.view.line(region)
             txt  = self.view.substr(region)
             ilvl = self.getIndentLevel(self.view.substr(region))
-            txt  = self.alignEntity (txt,ilvl)
+            txt  = self.alignEntity(txt,ilvl)
+        elif 'meta.block.record.vhdl' in scope:
+            region = sublime_util.expand_to_scope(self.view,'meta.block.record',region)
+            region = self.view.line(region)
+            txt  = self.view.substr(region)
+            ilvl = self.getIndentLevel(self.view.substr(region))
+            txt  = self.alignRecord(txt,ilvl)
+        else :
+            t = ''
+            for d in ['signal','variable','constant']:
+                if 'meta.block.{}'.format(d) in scope:
+                    t = d
+                    break
+            if t:
+                region = self.view.line(region)
+                # expand selection forward to find all lines with same scope
+                # print('[VHDL:Align] Initial region {}'.format(region))
+                while 1:
+                    p = self.view.find_by_class(region.b,True,sublime.CLASS_WORD_START|sublime.CLASS_PUNCTUATION_START|sublime.CLASS_EMPTY_LINE)
+                    scope = self.view.scope_name(p)
+                    # print('[VHDL:Align] Forward: Pos={} Scope={} Region={}'.format(p,scope,region))
+                    if p<= region.b or 'meta.block.{}'.format(t) not in scope:
+                        break
+                    region.b = p
+                    region = self.view.line(region)
+                # expand selection backward to find all lines with same scope
+                scope = 'meta.block.{}'.format(t)
+                while 1:
+                    p = self.view.find_by_class(region.a,False,sublime.CLASS_LINE_START|sublime.CLASS_EMPTY_LINE)
+                    p = self.view.find_by_class(p,True,sublime.CLASS_WORD_START|sublime.CLASS_PUNCTUATION_START)
+                    scope = self.view.scope_name(p)
+                    # print('[VHDL:Align] Backward Pos={} Scope={}'.format(p,scope))
+                    if p==-1 or p>= region.a or 'meta.block.{}'.format(t) not in scope:
+                        break
+                    region.a = p
+                    region = self.view.line(region)
+                txt  = self.view.substr(region)
+                # print('[VHDL:Align] Final region {}:\n{}'.format(region,txt))
+                ilvl = self.getIndentLevel(self.view.substr(region))
+                txt  = self.alignDecl(txt,ilvl)
+
         #
         if txt:
             self.view.replace(edit,region,txt)
@@ -79,7 +122,7 @@ class VhdlAlign(sublime_plugin.TextCommand):
             (?P<type>entity|component)\s+(?P<name>\w+)\s+is\s+
             (generic\s*\((?P<generic>.*?)\)\s*;\s*)?
             (port\s*\((?P<port>.*?)\)\s*;)\s*
-            (?P<ending>end\b(\s+entity)?(\s+(?P=name))?)\s*;
+            (?P<ending>end\b(\s+(?P=type))?(\s+(?P=name))?)\s*;
             """, txt, re.MULTILINE)
         if m is None:
             return txt
@@ -104,7 +147,9 @@ class VhdlAlign(sublime_plugin.TextCommand):
             name_len  = 0 if not name_len_l  else max(name_len_l )
             type_len  = 0 if not type_len_l  else max(type_len_l )
             range_len = 0 if not range_len_l else max(range_len_l)
-            init_len  = 0 if not init_len_l  else max(init_len_l )+4
+            init_len  = 0 if not init_len_l  else max(init_len_l )
+            if init_len>0:
+                init_len += 4
             all_range = [x[2] for x in decl if 'range' in x[2]]
             has_range = len(all_range)>0
             if has_range:
@@ -156,23 +201,28 @@ class VhdlAlign(sublime_plugin.TextCommand):
                 (?P<dir>in|out|inout)[\ \t]+
                 (?P<type>\w+)[\ \t]*
                 (?P<range>\([^\)]*\)|range[\ \t]+[\w\-\+]+[\ \t]+(?:(?:down)?to)[\ \t]+[\w\-\+]+)?
+                (?P<init>[\ \t]*\:=[\ \t]*(?P<init_val>[^;]+?))?
                 [\ \t]*(?P<end>;)?[\ \t]*(?:--(?P<comment>[^\n]*?))?$'''
             decl = re.findall(re_ports, ports ,flags=re.MULTILINE)
+            # print(decl)
             name_len_l  = [] if not decl else [len(x[0].strip()) for x in decl]
             dir_len_l   = [] if not decl else [len(x[1].strip()) for x in decl]
             type_len_l  = [] if not decl else [len(x[2].strip()) for x in decl]
             range_len_l = [] if not decl else [len(x[3].strip()) for x in decl]
-            name_len  = 0 if not name_len_l  else max(name_len_l )
-            dir_len   = 0 if not dir_len_l   else max(dir_len_l  )
-            type_len  = 0 if not type_len_l  else max(type_len_l )
-            range_len = 0 if not range_len_l else max(range_len_l)
+            init_len_l  = [] if not decl else [len(x[5].strip()) for x in decl]
+            name_len  = 0 if not name_len_l   else max(name_len_l )
+            dir_len   = 0 if not dir_len_l    else max(dir_len_l  )
+            type_len  = 0 if not type_len_l   else max(type_len_l )
+            range_len = 0 if not range_len_l  else max(range_len_l)
+            init_len  = 0 if not init_len_l   else max(init_len_l )+4
+            if init_len>0:
+                init_len += 4
             all_range = [x[3] for x in decl if 'range' in x[3]]
             has_range = len(all_range)>0
             if has_range:
                 range_len +=1
 
-            #print(decl)
-            comment_pos = name_len + type_len + range_len + dir_len+6
+            comment_pos = name_len + type_len + range_len + init_len + dir_len+6
             #print('Length ports: N={} D={} T={} R={} => {}'.format(name_len,dir_len,type_len,range_len,comment_pos))
 
             # Add params with alignement and copy non params line as is
@@ -191,9 +241,14 @@ class VhdlAlign(sublime_plugin.TextCommand):
                                 txt_new += '{range:<{length}}'.format(range=mp.group('range'),length=range_len)
                         else :
                             txt_new += ' '*(range_len)
+                    if init_len>0:
+                        if mp.group('init_val') :
+                            txt_new += ' := {val:<{length}}'.format(val=mp.group('init_val'),length=init_len-4)
+                        else :
+                            txt_new += ' '*init_len
                     txt_new += ';' if mp.group('end') else ' '
                     if mp.group('comment'):
-                        txt_new += ' -- {}'.format(mp.group('comment').strip())
+                        txt_new += ' --{}'.format(mp.group('comment').rstrip())
                 else :
                     mc = re.match(self.s_comment,l)
                     if mc :
@@ -205,15 +260,16 @@ class VhdlAlign(sublime_plugin.TextCommand):
                         txt_new += l
                 txt_new += '\n'
             txt_new += '{});\n'.format('\t'*(ilvl+1))
-        txt_new += '{}end;'.format('\t'*ilvl)
+        txt_new += '{}{};'.format('\t'*ilvl, ' '.join(m.group('ending').split()) )
 
         #print(txt_new)
         return txt_new
 
 
     def alignInstance(self,txt,ilvl):
-        m = re.match(r'(?si)(?P<emptyline>\n*)[ \t]*(?P<inst_name>\w+)\s*:\s*(?P<type>(?:entity\s+\w+\.)?\w+\b(?:\([\w\s]+\))?)\s*(?:(?P<gen_or_port>generic|port)\s+map)\s*\((?P<content>.*)\)\s*;',txt)
+        m = re.match(r'(?si)(?P<emptyline>\n*)[ \t]*(?P<inst_name>\w+)\s*:\s*(?P<type>(?:component\s+|entity\s+\w+\.)?\w+\b(?:\([\w\s]+\))?)\s*(?:(?P<gen_or_port>generic|port)\s+map)\s*\((?P<content>.*)\)\s*;',txt)
         if not m:
+            print('Fail')
             return ''
         txt_new = m.group('emptyline') + '\t'*(ilvl)
         txt_new += '{} : {}\n'.format(m.group('inst_name').strip(),m.group('type').strip())
@@ -274,3 +330,101 @@ class VhdlAlign(sublime_plugin.TextCommand):
             txt_new += '\n'
         return txt_new
 
+    def alignRecord(self,txt,ilvl):
+        # TODO: Extract comment location to be sure to handle all case of strange comment location
+        m = re.search(r"""(?six)^[\ \t]*type\s+
+            (?P<name>\w+)\s+is\s+record
+            (?P<content>.*?)
+            end\s+record\s*;
+            """, txt, re.MULTILINE)
+        if m is None:
+            return txt
+        content = vhdl_util.clean_comment(m.group('content'))
+        # print(content)
+        re_field = r'''(?six)^[\ \t]*
+                (?P<name>\w+)[\ \t]*:[\ \t]*
+                (?P<type>[^;]+?);
+                (?:[\ \t]*--(?P<comment>[^\n]*))?'''
+        field = re.findall(re_field, content ,flags=re.MULTILINE)
+        # print(field)
+        name_len_l  = [] if not field else [len(x[0].strip()) for x in field]
+        type_len_l  = [] if not field else [len(x[1].strip()) for x in field]
+        name_len  = 0 if not name_len_l   else max(name_len_l )
+        type_len  = 0 if not type_len_l   else max(type_len_l )
+
+        comment_pos = name_len + type_len
+
+        txt_new = '{}type {} is record\n'.format('\t'*(ilvl),m.group('name'))
+        for l in m.group('content').strip().splitlines() :
+            mf = re.match(re_field,l)
+            if mf :
+                txt_new += '{ident}{name:<{length}} : '.format(ident='\t'*(ilvl+1),name=mf.group('name'),length=name_len)
+                txt_new += '{type:<{length}}'.format(type=mf.group('type'),length=type_len)
+                txt_new += ';'
+                if mf.group('comment'):
+                    txt_new += ' --{}'.format(mf.group('comment').rstrip())
+            else :
+                mc = re.match(self.s_comment,l)
+                if mc :
+                    txt_new += '\t'*(ilvl+1)
+                    pos = comment_pos if self.getIndentLevel(mc.group('space')) > (ilvl+1) else 0
+                    txt_new += '{}{}'.format(' '*pos,mc.group(0).strip())
+                else :
+                    txt_new += l
+            txt_new += '\n'
+        txt_new += '{}end record;'.format('\t'*(ilvl))
+        return txt_new
+
+    def alignDecl(self,txt,ilvl):
+        re_decl = r'''(?six)^[\ \t]*
+            (?P<qual>\w+)[\ \t]*(?P<name>'''+self.s_id_list+r''')[\ \t]*:[\ \t]*
+            (?P<type>\w+)[\ \t]*
+            (?P<range>\([^\)]*\)|range[\ \t]+[\w\-\+]+[\ \t]+(?:(?:down)?to)[\ \t]+[\w\-\+]+)?
+            (?P<init>[\ \t]*\:=[\ \t]*(?P<init_val>[^;]+?))?
+            [\ \t]*;[\ \t]*(?:--(?P<comment>[^\n]*))?$'''
+        decl = re.findall(re_decl, txt ,flags=re.MULTILINE)
+        # print(decl)
+        qual_len_l  = [] if not decl else [len(x[0].strip()) for x in decl]
+        name_len_l  = [] if not decl else [len(x[1].strip()) for x in decl]
+        type_len_l  = [] if not decl else [len(x[2].strip()) for x in decl]
+        range_len_l = [] if not decl else [len(x[3].strip()) for x in decl]
+        init_len_l  = [] if not decl else [len(x[5].strip()) for x in decl]
+        qual_len  = 0 if not qual_len_l   else max(qual_len_l )
+        name_len  = 0 if not name_len_l   else max(name_len_l )
+        type_len  = 0 if not type_len_l   else max(type_len_l )
+        range_len = 0 if not range_len_l  else max(range_len_l)
+        init_len  = 0 if not init_len_l   else max(init_len_l )
+        if init_len>0:
+            init_len += 4
+        # print(decl)
+        # print('Len: qual = {}, name = {}, type = {}, range = {}, init = {} ({})'.format(qual_len,name_len,type_len,range_len,init_len,init_len))
+        #
+        txt_new = ''
+        for l in txt.strip().splitlines() :
+            mp = re.match(re_decl,l)
+            if mp :
+                txt_new += '{ident}{qual:<{length}} '.format(ident='\t'*ilvl,qual=mp.group('qual'),length=qual_len)
+                txt_new += '{name:<{length}} : '.format(name=mp.group('name').strip(),length=name_len)
+                txt_new += '{type:<{length}}'.format(type=mp.group('type'),length=type_len)
+                if range_len>0 :
+                    if mp.group('range') :
+                        if 'range' in mp.group('range'):
+                            txt_new += ' {range:<{length}}'.format(range=mp.group('range'),length=range_len-1)
+                        else :
+                            txt_new += '{range:<{length}}'.format(range=mp.group('range'),length=range_len)
+                    else :
+                        txt_new += ' '*(range_len)
+                if init_len>0:
+                    if mp.group('init_val') :
+                        txt_new += ' := {val:<{length}}'.format(val=mp.group('init_val'),length=init_len-4)
+                    else :
+                        txt_new += ' '*init_len
+                txt_new += ';'
+                if mp.group('comment'):
+                    txt_new += ' --{}'.format(mp.group('comment').rstrip())
+            else :
+                txt_new += l
+            txt_new += '\n'
+
+        #print(txt_new)
+        return txt_new[:-1]

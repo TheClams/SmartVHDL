@@ -188,18 +188,18 @@ class VhdlDoModuleInstCommand(sublime_plugin.TextCommand):
         if decl:
             r_start = self.view.find(r'(?si)^\s*architecture\s+\w+\s+of\s+\w+\s+is(.*?)$',0, sublime.IGNORECASE)
             if r_start:
-                print('Start = {} = {} '.format(r_start,self.view.substr(r_start)))
+                # print('Start = {} = {} '.format(r_start,self.view.substr(r_start)))
                 # find position of last ;
                 r_begin = self.view.find(r'(?si)\bbegin\b',r_start.b, sublime.IGNORECASE)
                 r_begin2 = self.view.find(r'(?si);[^;]+\bbegin\b',r_start.b, sublime.IGNORECASE)
-                print(' -> end = {} & {}'.format(r_begin,r_begin2))
+                # print(' -> end = {} & {}'.format(r_begin,r_begin2))
                 if r_begin2.a > 0 and r_begin2.a < r_begin.a - 1 :
                     r_start.a = r_begin2.a+1
                 elif r_begin.a > 0 and r_start.b < r_begin.a - 1 :
                     r_start.a = r_begin.a-1
                 else:
                     r_start.a = r_start.b
-                print(' => Start = {}'.format(r_start))
+                # print(' => Start = {}'.format(r_start))
                 self.view.insert(edit, r_start.a, '\n'+decl)
                 report += 'Declaring {} signals\n'.format(len(decl.splitlines()))
             else :
