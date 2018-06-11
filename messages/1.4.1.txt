@@ -1,0 +1,4 @@
+SmartVHDL 1.4.1 Changelog:
+
+## Fixes ##
+  - Highlight : Support block statement

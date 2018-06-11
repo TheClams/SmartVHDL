@@ -52,6 +52,7 @@ contexts:
         - include: component_pattern
         - include: if_pattern
         - include: process_pattern
+        - include: block_pattern
         - include: type_pattern
         - include: constant_pattern
         - include: signal_pattern
@@ -416,6 +417,7 @@ contexts:
         - include: component_pattern
         - include: component_instantiation_pattern
         - include: process_pattern
+        - include: block_pattern
         - include: cleanup
   function_definition_pattern:
     - match: |-
@@ -619,6 +621,7 @@ contexts:
           pop: true
         - include: control_patterns
         - include: process_pattern
+        - include: block_pattern
         - include: entity_instantiation_pattern
         - include: component_pattern
         - include: component_instantiation_pattern
@@ -956,6 +959,52 @@ contexts:
 
                         # Optional word process $3
                         (\s+((?i:process)))
+
+                        # Optional identifier $6 or invalid identifier $7
+                        (\s+((\2)|(.+?)))?
+
+                        (?=\s*;)
+
+          captures:
+            1: keyword.language.vhdl
+            3: keyword.language.vhdl
+            6: entity.name.section.process.end.vhdl
+            7: invalid.illegal.invalid.identifier.vhdl
+          pop: true
+        - include: control_patterns
+        - include: constant_pattern
+        - include: variable_pattern
+        - include: cleanup
+  block_pattern:
+    - match: |-
+        (?x)
+                    # From the beginning of the line
+                    ^\s*
+
+                    (
+                      # Optional identifier $2
+                      ({{id}})
+
+                      # Colon $3
+                      \s*(:)\s*
+                    )?
+
+                    # The word process #4
+                    ((?i:block\b))
+
+      captures:
+        2: entity.name.section.process.begin.vhdl
+        3: punctuation.vhdl
+        4: keyword.language.vhdl
+      push:
+        - meta_scope: meta.block.process.vhdl
+        - match: |-
+            (?x)
+                        # The word end $1
+                        ((?i:end))
+
+                        # Optional word process $3
+                        (\s+((?i:block)))
 
                         # Optional identifier $6 or invalid identifier $7
                         (\s+((\2)|(.+?)))?
