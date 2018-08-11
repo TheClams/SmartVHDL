@@ -1,0 +1,4 @@
+SmartVHDL 1.4.2 Changelog:
+
+## Fixes ##
+  - Tooltip : Now supports new color-scheme format

@@ -5,6 +5,7 @@
 	// "auto_complete_triggers": [ {"selector": "source.vhdl - string - comment - constant", "characters": "."} ],
 	// Popup configuration
 	"vhdl.tooltip_hide_on_move" : true, // True to hide the tooltip when the mouse move away from the tooltip
+	"vhdl.tooltip_show_refs"    : true, // True to show reference to module in tooltips
 	"vhdl.hover_max_size"       : -1  , // Max size of the file (in byte) to display popup info. Set to -1 to disable the limit (default), 0 to disable feature.
 	// Module instantiation configruation
 	"vhdl.instance_prefix"         : "i_",  // Prefix to the module instantiation name
