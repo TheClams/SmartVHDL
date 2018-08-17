@@ -1204,6 +1204,19 @@ contexts:
           captures:
             0: punctuation.vhdl
           pop: true
+        - match: \bunits\b
+          scope: keyword.declaration.vhdl
+          set:
+            - meta_scope: meta.block.type.units.vhdl
+            - match: (end)(?:\s+(units))?(?:\s+(\w+))?\s*(;)
+              captures:
+                1: keyword.language.vhdl
+                2: keyword.language.vhdl
+                3: entity.name.type.units.end.vhdl
+                4: punctuation.vhdl
+              pop: true
+            - include: record_pattern
+            - include: cleanup
         - include: record_pattern
         - include: cleanup
   constant_pattern:

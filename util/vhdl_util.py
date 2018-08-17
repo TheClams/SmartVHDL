@@ -7,7 +7,7 @@ import functools
 s_id_list = r'\w+(\s*,[\s\w,]+)?'
 re_signal = r'(?i)^\s*(?P<tag>signal|variable)\s+(?P<name>'+s_id_list+r')\s*:\s*(?P<type>[^;]+)'
 re_port   = r'(?i)^\s*(?P<name>'+s_id_list+r')\s*:\s*(?P<port>in|out|inout)\s+(?P<type>[^;]+)'
-re_generic = r'(?i)^\s*(?P<name>'+s_id_list+r')\s*:\s*(?P<type>[\w\d\s\(\)]+)\s*:=\s*(?P<value>[^;]+)'
+re_generic = r'(?i)^\s*(?P<name>'+s_id_list+r')\s*:\s*(?P<type>[\w\d\s\(\)]+)(?:\s*:=\s*(?P<value>[^;]+))?'
 re_const  = r'(?i)^\s*(?P<tag>constant)\s+(?P<name>'+s_id_list+r')\s*:\s*(?P<type>[\w\d\s\(\)]+)\s*:=\s*(?P<value>[^;]+)'
 
 ###############################################################################
@@ -49,7 +49,7 @@ def get_type_info(txt,var_name):
     txt = re.sub(r'(?si)^[ \t]*component\b.*?\bend\b.*?;','',txt) # remove component declaration
     re_list = [re_signal, re_port, re_const, re_generic]
     for s in re_list:
-        re_s = s.replace(s_id_list,var_name,1) # TODO: handle case variable is part of a list
+        re_s = s.replace(s_id_list,r'(?:[\s\w,]+,\s*)?' + var_name + r'(?:\s*,[\s\w,]+)?',1) # TODO: handle case variable is part of a list
         m = re.search(re_s, txt, flags=re.MULTILINE)
         # print(re_s)
         if m:
@@ -79,7 +79,7 @@ def get_type_info_from_match(var_name,m):
     else :
         d['tag'] = 'generic'
     if 'value' in m.groupdict():
-        d['value'] = m.group('value').strip()
+        d['value'] = '' if not m.group('value') else m.group('value').strip()
     for sig in sig_l:
         ti.append(d)
         # Remove other signal from the declaration

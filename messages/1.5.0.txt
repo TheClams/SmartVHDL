@@ -1,0 +1,9 @@
+SmartVHDL 1.5.0 Changelog:
+
+## Improvement ##
+  - Module instance:
+    * new settings (vhdl.instance_as_snippet) to allow more control on module/signal naming
+    * Support generic without default value
+  - Tooltip : now recognizes signals declares in a list
+  - Highlighting :
+    * Proper units block support

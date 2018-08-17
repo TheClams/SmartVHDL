@@ -110,7 +110,10 @@ class VhdlDoModuleParseCommand(sublime_plugin.TextCommand):
             self.param_value = []
             settings = self.view.settings()
             self.generic_explicit = settings.get('vhdl.generic_explicit',False)
-            if self.minfo['param'] and settings.get('vhdl.generic_fill'):
+            if settings.get('vhdl.instance_as_snippet',False):
+                for p in self.minfo['param']:
+                    self.param_value.append({'name':p['name'] , 'value': p['value']});
+            if self.minfo['param'] and settings.get('vhdl.generic_fill') and not settings.get('vhdl.instance_as_snippet',False):
                 self.cnt = 0
                 self.show_prompt()
             else:
@@ -119,8 +122,9 @@ class VhdlDoModuleParseCommand(sublime_plugin.TextCommand):
     # Prompt user for a generic value
     def show_prompt(self):
         p = self.minfo['param'][self.cnt]
-        default = 'Default: {0}'.format(p['value'])
-        panel = sublime.active_window().show_input_panel(p['name'], default, self.on_prompt_done, None, None)
+        default = '' if not p['value'] else 'Default: {0}'.format(p['value'])
+        name = '{} ({})'.format(p['name'],p['type'])
+        panel = sublime.active_window().show_input_panel(name, default, self.on_prompt_done, None, None)
         #select the whole line (to ease value change)
         r = panel.line(panel.sel()[0])
         panel.sel().clear()
@@ -153,7 +157,15 @@ class VhdlDoModuleInstCommand(sublime_plugin.TextCommand):
         (decl,ac,wc) = self.get_connect(self.view,settings,minfo)
         # print('decl = {}\nAC = {}\nwc = {}'.format(decl,ac,wc))
         # Instance name
-        inst = '\t' + settings.get('vhdl.instance_prefix','') + minfo['name'] + settings.get('vhdl.instance_suffix','')
+        is_snippet = settings.get('vhdl.instance_as_snippet',False)
+        inst = '\t'
+        cnt = 1
+        if is_snippet :
+            inst+= '${{{}:'.format(cnt)
+            cnt += 1
+        inst += settings.get('vhdl.instance_prefix','') + minfo['name'] + settings.get('vhdl.instance_suffix','')
+        if is_snippet :
+            inst+= '}'
         inst += ' : entity work.{}\n'.format(minfo['name'])
         # Generic Map
         if params :
@@ -161,7 +173,13 @@ class VhdlDoModuleInstCommand(sublime_plugin.TextCommand):
             max_len_l = max([len(x['name']) for x in params])
             max_len_r = max([len(x['value']) for x in params])
             for i,param in enumerate(params) :
-                inst += '\t\t\t{} => {}'.format(param['name'].ljust(max_len_l),param['value'].ljust(max_len_r))
+                inst += '\t\t\t{} => '.format(param['name'].ljust(max_len_l))
+                if is_snippet :
+                    inst+= '${{{}:'.format(cnt)
+                    cnt += 1
+                inst += param['value'].ljust(max_len_r)
+                if is_snippet :
+                    inst+= '}'
                 if i<len(params)-1:
                     inst +=','
                 inst += '\n'
@@ -172,7 +190,13 @@ class VhdlDoModuleInstCommand(sublime_plugin.TextCommand):
             max_len_l = max([len(x['name']) for x in minfo['port']])
             max_len_r = 0 if not ac else max([len(x) for x in ac])
             for i,port in enumerate(minfo['port']) :
-                inst += '\t\t\t{} => {}'.format(port['name'].ljust(max_len_l), '' if port['name'] not in ac else ac[port['name']].ljust(max_len_r))
+                inst += '\t\t\t{} => '.format(port['name'].ljust(max_len_l))
+                if is_snippet :
+                    inst+= '${{{}:'.format(cnt)
+                    cnt += 1
+                inst += '' if port['name'] not in ac else ac[port['name']].ljust(max_len_r)
+                if is_snippet :
+                    inst+= '}'
                 # Remove entry of ac if it is the same as the port (to be used by the final report)
                 if port['name'] in ac and ac[port['name']] == port['name']:
                     ac.pop(port['name'],0)
@@ -183,9 +207,12 @@ class VhdlDoModuleInstCommand(sublime_plugin.TextCommand):
         inst += ';\n\n'
         report = ''
         # Insert code for module Instantiation
-        self.view.insert(edit, self.view.line(self.view.sel()[0]).a, inst)
+        if is_snippet:
+            self.view.run_command('insert_snippet',{'contents':inst})
+        else :
+            self.view.insert(edit, self.view.line(self.view.sel()[0]).a, inst)
         # Insert signal declaration if any
-        if decl:
+        if decl and not is_snippet:
             r_start = self.view.find(r'(?si)^\s*architecture\s+\w+\s+of\s+\w+\s+is(.*?)$',0, sublime.IGNORECASE)
             if r_start:
                 # print('Start = {} = {} '.format(r_start,self.view.substr(r_start)))
