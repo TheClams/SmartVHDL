@@ -59,6 +59,7 @@ contexts:
         - include: variable_pattern
         - include: record_pattern
         - include: for_pattern
+        - include: case_pattern
         - include: entity_instantiation_pattern
         - include: component_instantiation_pattern
         - include: cleanup
@@ -111,7 +112,7 @@ contexts:
                         \b((?i:end))\s*
 
                         # The word case $4 or invalid word $5
-                        (\s+(((?i:case\??))|(.*?)))
+                        (\s+(((?i:case\??|generate))|(.*?)))
 
                         # Optional identifier from before $8 or illegal $9
                         (\s+((\2)|(.*?)))?
@@ -229,17 +230,26 @@ contexts:
   constants_numeric:
     - match: '\b([+\-]?[\d_]+\.[\d_]+([eE][+\-]?[\d_]+)?)\b'
       scope: constant.numeric.floating_point.vhdl
-    - match: '\b\d+#[0-9a-fA-F_]+#'
+    - match: '\b(\d+#)[0-9a-fA-F_]+(#)'
       scope: constant.numeric.base_pound_number_pound.vhdl
+      captures:
+        1 : punctuation.definition.numeric.hexadecimal.vhdl
+        2 : punctuation.definition.numeric.hexadecimal.vhdl
     - match: '\b[\d_]+([eE][\d_]+)?\b'
       scope: constant.numeric.integer.vhdl
-    - match: '[xX]"[0-9a-fA-F_uUxXzZwWlLhH\-]+"'
+    - match: '(\d*[xX])"[0-9a-fA-F_uUxXzZwWlLhH\-]+"'
       scope: constant.numeric.quoted.double.string.hex.vhdl
-    - match: '[oO]"[0-7_uUxXzZwWlLhH\-]+"'
+      captures:
+        1 : punctuation.definition.numeric.hexadecimal.vhdl
+    - match: '(\d*[oO])"[0-7_uUxXzZwWlLhH\-]+"'
       scope: constant.numeric.quoted.double.string.octal.vhdl
-    - match: '[bB]?"[01_uUxXzZwWlLhH\-]+"'
+      captures:
+        1 : punctuation.definition.numeric.octal.vhdl
+    - match: '(\d*[bB]?)"[01_uUxXzZwWlLhH\-]+"'
       scope: constant.numeric.quoted.double.string.binary.vhdl
-    - match: '([bBoOxX]".+?")'
+      captures:
+        1 : punctuation.definition.numeric.binary.vhdl
+    - match: '(\d*[bBoOxX]".+?")'
       scope: constant.numeric.quoted.double.string.illegal.vhdl
       captures:
         1: invalid.illegal.quoted.double.string.vhdl
@@ -943,13 +953,17 @@ contexts:
                       \s*(:)\s*
                     )?
 
-                    # The word process #4
+                    # Optionnal postponned statement $4
+                    (?:((?i:postponed))\s+)?
+
+                    # The word process #5
                     ((?i:process\b))
 
       captures:
         2: entity.name.section.process.begin.vhdl
         3: punctuation.vhdl
         4: keyword.language.vhdl
+        5: keyword.language.vhdl
       push:
         - meta_scope: meta.block.process.vhdl
         - match: |-
@@ -957,19 +971,23 @@ contexts:
                         # The word end $1
                         ((?i:end))
 
-                        # Optional word process $3
+                        # Optional word posponed $3
+                        (\s+((?i:postponed)))?
+
+                        # Word process $4
                         (\s+((?i:process)))
 
-                        # Optional identifier $6 or invalid identifier $7
-                        (\s+((\2)|(.+?)))?
+                        # Optional identifier $7 or invalid identifier $8
+                        (\s+((\3)|(.+?)))?
 
                         (?=\s*;)
 
           captures:
             1: keyword.language.vhdl
             3: keyword.language.vhdl
-            6: entity.name.section.process.end.vhdl
-            7: invalid.illegal.invalid.identifier.vhdl
+            4: keyword.language.vhdl
+            7: entity.name.section.process.end.vhdl
+            8: invalid.illegal.invalid.identifier.vhdl
           pop: true
         - include: control_patterns
         - include: constant_pattern
@@ -1017,6 +1035,8 @@ contexts:
             6: entity.name.section.process.end.vhdl
             7: invalid.illegal.invalid.identifier.vhdl
           pop: true
+        - include: entity_instantiation_pattern
+        - include: component_instantiation_pattern
         - include: control_patterns
         - include: constant_pattern
         - include: variable_pattern

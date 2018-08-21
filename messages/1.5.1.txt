@@ -1,0 +1,8 @@
+SmartVHDL 1.5.1 Changelog:
+
+## Fix ##
+  - Highlighting :
+    * Support instance in block statement
+    * Better scoping of numerical specifier (hex/oct/...)
+    * Support case generate
+    * Better support for postponed process
