@@ -5,7 +5,7 @@
 	<key>name</key>
 	<string>Symbol List</string>
 	<key>scope</key>
-	<string>entity.name.type.entity.end.vhdl, entity.name.type.architecture.end, entity.name.type.component.end, entity.name.function.function.end</string>
+	<string>entity.name.type.entity.end.vhdl, entity.name.type.architecture.end, entity.name.type.component.end, entity.name.function.function.end, entity.name.function.procedure.end</string>
 	<key>settings</key>
 	<dict>
 		<key>showInSymbolList</key>
