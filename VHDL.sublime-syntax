@@ -451,7 +451,7 @@ contexts:
           # Check to make sure we have a list or we return
           (?=\s*
             (
-               \(
+               \(|\n
               |(?i:\breturn\b)
             )
           )
@@ -501,6 +501,8 @@ contexts:
                     # From the beginning of the line
                     ^\s*
 
+                    # Optionnal impure keyword
+                    (?:((?i:impure))\s+)?
                     # The word function $1
                     ((?i:function))\s+
 
@@ -519,17 +521,18 @@ contexts:
                     # Check to make sure we have a list or we return
                     (?=\s*
                       (
-                         \(
+                         \(|\n
                         |(?i:\breturn\b)
                       )
                     )
 
       captures:
         1: keyword.language.vhdl
-        3: entity.name.function.function.prototype.vhdl
+        2: keyword.language.vhdl
         4: entity.name.function.function.prototype.vhdl
         5: entity.name.function.function.prototype.vhdl
-        6: invalid.illegal.function.name.vhdl
+        6: entity.name.function.function.prototype.vhdl
+        7: invalid.illegal.function.name.vhdl
       push:
         - meta_scope: meta.block.function_prototype.vhdl
         - match: (?<=;)
@@ -882,7 +885,7 @@ contexts:
                     )
 
                     # Check to make sure we have a list is
-                    (?=\s*(\(|(?i:is)))
+                    (?=\s*(\(|\n|(?i:is)))
 
       captures:
         1: keyword.language.vhdl
@@ -927,7 +930,7 @@ contexts:
         (?x)
           \b((?i:procedure))\s+
           (({{id}})|(.+?))
-          (?=\s*(\(|;))
+          (?=\s*(\(|\n|;))
       captures:
         1: keyword.language.vhdl
         3: entity.name.function.procedure.begin.vhdl
@@ -1201,6 +1204,62 @@ contexts:
     - include: support_types
     - include: support_functions
   type_pattern:
+    - match: |-
+        (?x)
+          # The word type $1
+          \b((?i:type))\s+
+          # Valid identifier $3 or invalid identifier $4
+          (({{id}})|(.+?))
+          (\s+((?i:is\s+protected\s+body)))\b
+      captures:
+        1: keyword.language.vhdl
+        3: entity.name.type.type.vhdl
+        4: invalid.illegal.invalid.identifier.vhdl
+        6: keyword.language.vhdl
+      push:
+        - meta_scope: meta.block.type.vhdl
+        - match: (end)(?:\s+(protected\s+body))?(?:\s+(?:((\3)|(.+?))))?\s*(;)
+          captures:
+            1: keyword.language.vhdl
+            2: keyword.language.vhdl
+            4: entity.name.type.protected.end.vhdl
+            5: invalid.illegal.mismatched.identifier.vhdl
+            6: punctuation.vhdl
+          pop: true
+        - include: function_definition_pattern
+        - include: procedure_definition_pattern
+        - include: record_pattern
+        - include: cleanup
+    - match: |-
+        (?x)
+          # The word type $1
+          \b((?i:type))\s+
+          # Valid identifier $3 or invalid identifier $4
+          (({{id}})|(.+?))
+          (\s+((?i:is\s+protected)))\b
+      captures:
+        1: keyword.language.vhdl
+        3: entity.name.type.type.vhdl
+        4: invalid.illegal.invalid.identifier.vhdl
+        6: keyword.language.vhdl
+      push:
+        - meta_scope: meta.block.type.vhdl
+        - match: ;
+          captures:
+            0: punctuation.vhdl
+          pop: true
+        - match: (end)(?:\s+(protected))?(?:\s+(?:((\3)|(.+?))))?\s*(;)
+          captures:
+            1: keyword.language.vhdl
+            2: keyword.language.vhdl
+            4: entity.name.type.protected.end.vhdl
+            5: invalid.illegal.mismatched.identifier.vhdl
+            6: punctuation.vhdl
+          pop: true
+        - include: record_pattern
+        - include: function_prototype_pattern
+        - include: procedure_prototype_pattern
+        - include: cleanup
     - match: |-
         (?x)
           # The word type $1
