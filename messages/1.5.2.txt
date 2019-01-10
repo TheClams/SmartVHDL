@@ -1,0 +1,8 @@
+SmartVHDL 1.5.2 Changelog:
+
+## Fix ##
+  - Symbol list: remove duplicate end label for task
+  - Highlighting :
+    * Support protected type
+    * Support impure function
+    * Support procedure/task declaration with open parenthesis on another line

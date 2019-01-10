@@ -1038,6 +1038,7 @@ contexts:
             6: entity.name.section.process.end.vhdl
             7: invalid.illegal.invalid.identifier.vhdl
           pop: true
+        - include: process_pattern
         - include: entity_instantiation_pattern
         - include: component_instantiation_pattern
         - include: control_patterns
