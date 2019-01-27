@@ -147,7 +147,21 @@ class VhdlTypePopup :
         if not s:
             sublime.status_message('No definition found for ' + v)
         else :
+            ref_name = ''
             s = self.color_str(s,True,ti)
+            if ti and ti['type'] in ['entity', 'component']:
+                ref_name = ti['name']
+            # Add reference list
+            if show_ref and ref_name :
+                refs = self.view.window().lookup_references_in_index(ref_name)
+                if refs:
+                    ref_links = []
+                    for l in refs :
+                        l_href = '{}:{}:{}'.format(l[0],l[2][0],l[2][1])
+                        l_name = os.path.basename(l[0])
+                        ref_links.append('<a href="LINK@{}" class="ref_links">{}</a>'.format(l_href,l_name))
+                    s += '<h1><br>Reference:</h1><span>{}</span>'.format('<br>'.join(ref_links))
+            # Create popup 
             s = '<style>{css}</style><div class="content">{txt}</div>'.format(css=tooltip_css, txt=s)
             self.view.show_popup(s,location=location, flags=tooltip_flag, max_width=500, on_navigate=self.on_navigate)
 
@@ -171,6 +185,14 @@ class VhdlTypePopup :
                     ti = vhdl_util.get_type_info(info['match'].group('content'),var_name)
                     if ti:
                         txt = ti['decl']
+        elif 'entity.name.type.entity' in scope or 'entity.name.type.component' in scope:
+            t = 'component' if 'component' in scope else 'entity'
+            ti = {'decl': '{} {}'.format(t,var_name), 'type':t, 'name':var_name, 'tag':'decl', 'value':None}
+            txt = ti['decl']
+        elif 'storage.type.entity.reference' in scope or 'storage.type.component.reference' in scope:
+            t = 'component' if 'component' in scope else 'entity'
+            ti = {'decl': '{} {}'.format(t,var_name), 'type':t, 'name':var_name, 'tag':'reference', 'value':None}
+            txt = ti['decl']
         else :
             # lookup for a signal/variable declaration in current file
             lines = self.view.substr(sublime.Region(0, self.view.line(region).b))
@@ -193,13 +215,18 @@ class VhdlTypePopup :
         elif words[0] in ['port']:
             idx_type = 8
             link = 'LOCAL@{}:{}'.format(words[0],words[2])
-        elif ti_var and ti_var['tag']=='generic':
-            idx_type = 4
-            sh+='<span class="keyword">generic</span> '
-            link = 'LOCAL@{}:{}'.format(words[0],words[2])
+        elif ti_var :
+            if ti_var['tag']=='reference' :
+                re_str = r'(?si)(?P<type>entity)\s+(?P<name>'+ti_var['name']+r')\s+is'
+                info = sublime_util.lookup_symbol(self.view, ti_var['name'], re_str)
+                link = 'LINK@{}:{}:{}'.format(info['fname'],info['row'],info['col'])
+            elif ti_var['tag']=='generic':
+                idx_type = 4
+                sh+='<span class="keyword">generic</span> '
+                link = 'LOCAL@{}:{}'.format(words[0],words[2])
         for i,w in enumerate(words):
             # Check for keyword
-            if w.lower() in ['signal','variable','constant','port','array','downto','upto','of','in','out','inout']:
+            if w.lower() in ['signal','variable','constant','port','array','downto','upto','of','in','out','inout','entity','component']:
                 sh+='<span class="keyword">{0}</span>'.format(w)
             elif w in [':','-','+','=']:
                 sh+='<span class="operator">{0}</span>'.format(w)

@@ -119,7 +119,7 @@ class VhdlAlign(sublime_plugin.TextCommand):
     def alignEntity(self,txt,ilvl):
         # TODO: Extract comment location to be sure to handle all case of strange comment location
         m = re.search(r"""(?six)
-            (?P<type>entity|component)\s+(?P<name>\w+)\s+is\s+
+            (?P<type>entity|component)\s+(?P<name>\w+)\s+(?P<is>is\s+)?
             (generic\s*\((?P<generic>.*?)\)\s*;\s*)?
             (port\s*\((?P<port>.*?)\)\s*;)\s*
             (?P<ending>end\b(\s+(?P=type))?(\s+(?P=name))?)\s*;
@@ -128,7 +128,10 @@ class VhdlAlign(sublime_plugin.TextCommand):
             return txt
 
         txt_new = '\t'*(ilvl)
-        txt_new += '{} {} is \n'.format(m.group('type'),m.group('name'))
+        txt_new += '{} {}'.format(m.group('type'),m.group('name'))
+        if m.group('is') : 
+            txt_new += ' is'
+        txt_new += '\n'
 
         if m.group('generic') :
             # Extract all params info to know width of each for future alignement
@@ -214,7 +217,7 @@ class VhdlAlign(sublime_plugin.TextCommand):
             dir_len   = 0 if not dir_len_l    else max(dir_len_l  )
             type_len  = 0 if not type_len_l   else max(type_len_l )
             range_len = 0 if not range_len_l  else max(range_len_l)
-            init_len  = 0 if not init_len_l   else max(init_len_l )+4
+            init_len  = 0 if not init_len_l   else max(init_len_l )
             if init_len>0:
                 init_len += 4
             all_range = [x[3] for x in decl if 'range' in x[3]]
@@ -223,27 +226,27 @@ class VhdlAlign(sublime_plugin.TextCommand):
                 range_len +=1
 
             comment_pos = name_len + type_len + range_len + init_len + dir_len+6
-            #print('Length ports: N={} D={} T={} R={} => {}'.format(name_len,dir_len,type_len,range_len,comment_pos))
+            # print('Length ports: N={} D={} T={} R={} I={} => {}'.format(name_len,dir_len,type_len,range_len,init_len,comment_pos))
 
             # Add params with alignement and copy non params line as is
             txt_new += '{}port (\n'.format('\t'*(ilvl+1))
             for l in m.group('port').strip().splitlines() :
                 mp = re.match(re_ports,l)
                 if mp :
-                    txt_new += '{ident}{name:<{length}} : '.format(ident='\t'*(ilvl+2),name=mp.group('name'),length=name_len)
-                    txt_new += '{dir:<{length}} '.format(dir=mp.group('dir'),length=dir_len)
-                    txt_new += '{type:<{length}}'.format(type=mp.group('type'),length=type_len)
+                    txt_new += '{ident}{name:<{length}} : '.format(ident='\t'*(ilvl+2),name=mp.group('name').strip(),length=name_len)
+                    txt_new += '{dir:<{length}} '.format(dir=mp.group('dir').strip(),length=dir_len)
+                    txt_new += '{type:<{length}}'.format(type=mp.group('type').strip(),length=type_len)
                     if range_len>0 :
                         if mp.group('range') :
                             if 'range' in mp.group('range'):
-                                txt_new += ' {range:<{length}}'.format(range=mp.group('range'),length=range_len-1)
+                                txt_new += ' {range:<{length}}'.format(range=mp.group('range').strip(),length=range_len-1)
                             else :
-                                txt_new += '{range:<{length}}'.format(range=mp.group('range'),length=range_len)
+                                txt_new += '{range:<{length}}'.format(range=mp.group('range').strip(),length=range_len)
                         else :
                             txt_new += ' '*(range_len)
                     if init_len>0:
                         if mp.group('init_val') :
-                            txt_new += ' := {val:<{length}}'.format(val=mp.group('init_val'),length=init_len-4)
+                            txt_new += ' := {val:<{length}}'.format(val=mp.group('init_val').strip(),length=init_len-4)
                         else :
                             txt_new += ' '*init_len
                     txt_new += ';' if mp.group('end') else ' '

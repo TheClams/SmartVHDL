@@ -1,0 +1,10 @@
+SmartVHDL 1.6.0 Changelog:
+
+## Improvement ##
+  - Tooltip : 
+    * Show reference for entity
+    * Gives link to entity definition when used in instantiation
+
+## Fix ##
+  - Alignement : 
+    * fix for component declaration where "is" keyword is missing
