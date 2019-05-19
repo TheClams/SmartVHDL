@@ -2,7 +2,8 @@
 	"word_wrap": false,
 	"extensions": ["vhd", "vhdl","vht"],
 	// Allow a dot to trigger autocomplete, except in string, comment or constant
-	// "auto_complete_triggers": [ {"selector": "source.vhdl - string - comment - constant", "characters": "."} ],
+	"auto_complete_triggers": [ {"selector": "source.vhdl - string - comment - constant", "characters": "."} ],
+	"vhdl.ext"  : ["vhd","vhdl" ], // File extension used to find type information for autocompletion/popup
 	// Popup configuration
 	"vhdl.tooltip_hide_on_move" : true, // True to hide the tooltip when the mouse move away from the tooltip
 	"vhdl.tooltip_show_refs"    : true, // True to show reference to module in tooltips
@@ -19,5 +20,10 @@
 	"vhdl.autoconnect_port_prefix" : [],    // List of prefix to remove from the port before looking for a signal connection
 	"vhdl.autoconnect_port_suffix" : [] ,   // List of suffix to remove from the port before looking for a signal connection
 	// Navigation config
-	"vhdl.hierarchy_new_window" : false  // True to open a new window to display the module hierarchy
+	"vhdl.hierarchy_new_window" : false,  // True to open a new window to display the module hierarchy
+	// Autocompletion settings
+	"vhdl.disable_autocomplete" : false,  // True to disable auto-completion
+	"vhdl.autocomplete_max_lvl" : 5,      // Max hierachy level for autocompletion (class.struct.field.sub_field == 4 level) , -1 for no limit
+	// Global config
+	"vhdl.debug" : false // True to display debug message in the console
 }

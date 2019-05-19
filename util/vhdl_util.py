@@ -9,6 +9,7 @@ re_signal = r'(?i)^\s*(?P<tag>signal|variable)\s+(?P<name>'+s_id_list+r')\s*:\s*
 re_port   = r'(?i)^\s*(?P<name>'+s_id_list+r')\s*:\s*(?P<port>in|out|inout)\s+(?P<type>[^;]+)'
 re_generic = r'(?i)^\s*(?P<name>'+s_id_list+r')\s*:\s*(?P<type>[\w\d\s\(\)]+)(?:\s*:=\s*(?P<value>[^;]+))?'
 re_const  = r'(?i)^\s*(?P<tag>constant)\s+(?P<name>'+s_id_list+r')\s*:\s*(?P<type>[\w\d\s\(\)]+)\s*:=\s*(?P<value>[^;]+)'
+re_record  = r'(?si)^\s*(?P<tag>type)\s+(?P<name>'+s_id_list+r')\s+is\s+(?P<type>record)\b(?P<content>.+?)(end\s+record)'
 
 ###############################################################################
 # Clean all comment (useful before parsing file for information)
@@ -47,14 +48,31 @@ def get_type_info_file_cache(fname, var_name, fdate):
 def get_type_info(txt,var_name):
     txt = clean_comment(txt)
     txt = re.sub(r'(?si)^[ \t]*component\b.*?\bend\b.*?;','',txt) # remove component declaration
-    re_list = [re_signal, re_port, re_const, re_generic]
+    re_list = [re_signal, re_port, re_const, re_generic, re_record]
     for s in re_list:
-        re_s = s.replace(s_id_list,r'(?:[\s\w,]+,\s*)?' + var_name + r'(?:\s*,[\s\w,]+)?',1) # TODO: handle case variable is part of a list
+        if '<tag>type' in s:
+            re_s = s.replace(s_id_list,var_name,1)
+        else :
+            re_s = s.replace(s_id_list,r'(?:[\s\w,]+,\s*)?' + var_name + r'(?:\s*,[\s\w,]+)?',1)
         m = re.search(re_s, txt, flags=re.MULTILINE)
         # print(re_s)
         if m:
             break
     ti = get_type_info_from_match(var_name,m)[0]
+    return ti
+
+# Extract all signal declaration
+def get_all_type_info_from_record(decl):
+    m = re.search(r'\brecord\s+(.*?)\bend',decl)
+    if m is None:
+        return []
+    ti = []
+    content = m.group(1)
+    print(content)
+    r = re.compile(r'(?P<name>\w+)\s*:\s*(?P<type>[^;]+);\s*(--(?P<comment>.*?\n))?',flags=re.MULTILINE)
+    for m in r.finditer(content):
+        ti.append({'decl':m.group(0), 'type':m.group('type'), 'name':m.group('name'), 'tag':'field', 'value':None, 'comment':m.group('comment')})
+    # pprint.pprint(ti, width=200)
     return ti
 
 
