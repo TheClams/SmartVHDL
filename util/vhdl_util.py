@@ -68,7 +68,7 @@ def get_all_type_info_from_record(decl):
         return []
     ti = []
     content = m.group(1)
-    print(content)
+    # print(content)
     r = re.compile(r'(?P<name>\w+)\s*:\s*(?P<type>[^;]+);\s*(--(?P<comment>.*?\n))?',flags=re.MULTILINE)
     for m in r.finditer(content):
         ti.append({'decl':m.group(0), 'type':m.group('type'), 'name':m.group('name'), 'tag':'field', 'value':None, 'comment':m.group('comment')})

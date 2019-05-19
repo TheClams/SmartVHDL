@@ -152,7 +152,7 @@ class VerilogAutoComplete(sublime_plugin.EventListener):
                     continue
                 file_checked.append(fname)
                 if fname.lower().endswith(file_ext):
-                    print(w + ' of type ' + ti['type'] + ' defined in ' + str(fname))
+                    # print(w + ' of type ' + ti['type'] + ' defined in ' + str(fname))
                     tti = vhdl_util.get_type_info_file(fname,ti['type'])
                     if tti['type']:
                         break

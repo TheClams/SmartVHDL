@@ -21,6 +21,10 @@ except ImportError:
 
 ############################################################################
 # Init
+default_type = [
+    'bit', 'bit_vector', 'boolean', 'character', 'integer', 'natural', 'positive', 'real', 'string',
+    'std_logic', 'std_ulogic', 'std_logic_vector', 'std_ulogic_vector', 'signed', 'unsigned'
+]
 tooltip_css = ''
 tooltip_flag = 0
 show_ref = True
@@ -92,6 +96,59 @@ def init_css():
 
 
 ############################################################################
+# Help function to retrieve type
+
+def type_info(view, t):
+    tti = None
+    filelist = view.window().lookup_symbol_in_index(t)
+    if filelist:
+        file_ext = ('vhd','vhdl')
+        # file_ext = tuple(self.settings.get('vhdl.ext',['vhd','vhdl']))
+        file_checked = []
+        for f in filelist:
+            fname = sublime_util.normalize_fname(f[0])
+            if fname in file_checked:
+                continue
+            file_checked.append(fname)
+            if fname.lower().endswith(file_ext):
+                # print(v + ' of type ' + t + ' defined in ' + str(fname))
+                tti = vhdl_util.get_type_info_file(fname,t)
+                if tti['type']:
+                    tti['fname'] = (f[0],f[2][0],f[2][1])
+                    # print(tti['fname'])
+                    break
+    # print(['[type_info] tti={}'.format(tti)])
+    return tti
+
+def type_info_on_hier(view, varname, txt=None, region=None):
+    va = varname.split('.')
+    ti = None
+    scope = ''
+    if not txt and region:
+        txt = view.substr(sublime.Region(0, view.line(region).b))
+    for i in range(0,len(va)):
+        v = va[i].split('[')[0] # retrieve name without array part
+        # Get type definition: first iteration is done inside current file
+        if i==0:
+            ti = vhdl_util.get_type_info(txt, v)
+            # print('[type_info_on_hier] level {} : {} has type {}'.format(i,v,ti['type']))
+        elif ti and ti['type']:
+            ti = type_info(view,ti['type'])
+            # print('[type_info_on_hier] level {} : {} has type {}'.format(i,v,ti['type']))
+            if ti and ti['type']=='record' :
+                fti = vhdl_util.get_all_type_info_from_record(ti['decl'])
+                line = 0 if 'fname' not in ti else ti['fname'][1]+1
+                for f in fti:
+                    if f['name'].lower()==v.lower():
+                        if 'fname' in ti:
+                            f['fname'] = (ti['fname'][0],line,ti['fname'][2])
+                        ti = f
+                        break
+                    line += 1
+
+    return ti
+
+############################################################################
 callbacks_on_load = {}
 
 class VerilogOnLoadEventListener(sublime_plugin.EventListener):
@@ -138,10 +195,22 @@ class VhdlTypePopup :
                 region.a = self.view.find_by_class(region.a,False,sublime.CLASS_WORD_START)
             if (self.view.classify(region.b) & sublime.CLASS_WORD_END)==0:
                 region.b = self.view.find_by_class(region.b,True,sublime.CLASS_WORD_END)
+        # Extends to parent if previous character is a dot
+        while region.a>1 and self.view.substr(sublime.Region(region.a-1,region.a))=='.' :
+            c = self.view.substr(sublime.Region(region.a-2,region.a-1))
+            # Array selection -> extend to start of array
+            if c == ')':
+                region.a = self.view.find_by_class(region.a-3,False,sublime.CLASS_WORD_START)
+            if self.view.classify(region.a-2) & sublime.CLASS_WORD_START:
+                region.a = region.a-2
+            else :
+                region.a = self.view.find_by_class(region.a-2,False,sublime.CLASS_WORD_START)
+
         v = self.view.substr(region)
+        # print('[VhdlTypePopup] Var = {}'.format(v))
         # trigger on valid word only
-        if not re.match(r'^[A-Za-z_]\w*$',v):
-            return
+        # if not re.match(r'^[A-Za-z_]\w*$',v):
+        #     return
         #
         s,ti = self.get_type(v,region)
         if not s:
@@ -151,6 +220,17 @@ class VhdlTypePopup :
             s = self.color_str(s,True,ti)
             if ti and ti['type'] in ['entity', 'component']:
                 ref_name = ti['name']
+            # Records: add field definition
+            if ti['type'] and ti['tag']:
+                type_base= ti['type'].split('(')[0].lower()
+                if ti['tag'] in ['signal','port'] and type_base not in default_type:
+                    tti = type_info(self.view,ti['type'])
+                    if tti and tti['type'] == 'record' :
+                        fti = vhdl_util.get_all_type_info_from_record(tti['decl'])
+                        template='<br><span class="extra-info">{0}{1}</span>'
+                        for f in fti:
+                            x = self.color_str(f['decl'])
+                            s += template.format('&nbsp;'*4,x)
             # Add reference list
             if show_ref and ref_name :
                 refs = self.view.window().lookup_references_in_index(ref_name)
@@ -161,7 +241,7 @@ class VhdlTypePopup :
                         l_name = os.path.basename(l[0])
                         ref_links.append('<a href="LINK@{}" class="ref_links">{}</a>'.format(l_href,l_name))
                     s += '<h1><br>Reference:</h1><span>{}</span>'.format('<br>'.join(ref_links))
-            # Create popup 
+            # Create popup
             s = '<style>{css}</style><div class="content">{txt}</div>'.format(css=tooltip_css, txt=s)
             self.view.show_popup(s,location=location, flags=tooltip_flag, max_width=500, on_navigate=self.on_navigate)
 
@@ -169,6 +249,7 @@ class VhdlTypePopup :
         scope = self.view.scope_name(region.a)
         ti = None
         txt = ''
+        # print('[VhdlTypePopup:get_type] Var={}, region={}, scope={}'.format(var_name,region,scope))
         if 'variable.parameter.port' in scope:
             if 'meta.block.entity_instantiation' in scope:
                 r_inst = sublime_util.expand_to_scope(self.view,'meta.block.entity_instantiation',region)
@@ -193,6 +274,16 @@ class VhdlTypePopup :
             t = 'component' if 'component' in scope else 'entity'
             ti = {'decl': '{} {}'.format(t,var_name), 'type':t, 'name':var_name, 'tag':'reference', 'value':None}
             txt = ti['decl']
+        elif 'storage.type.userdefined' in scope :
+            ti = type_info(self.view,var_name)
+            if ti:
+                txt = ti['decl']
+                if ti['type'] == 'record' :
+                    txt = re.sub(r'(\brecord\b|;)',r'\1<br>',txt)
+        elif '.' in var_name:
+            ti = type_info_on_hier(self.view, var_name, region=region)
+            if ti:
+                txt = ti['decl']
         else :
             # lookup for a signal/variable declaration in current file
             lines = self.view.substr(sublime.Region(0, self.view.line(region).b))
@@ -204,7 +295,7 @@ class VhdlTypePopup :
     def color_str(self,s, addLink=False, ti_var=None):
         # Split all text in word, special character, space and line return
         words = re.findall(r"\w+|[^\w\s]|\s+", s)
-        # print('String = "{}" \n Split => {}'.format(s,words))
+        # print('[color_str] String = "{}" \n Split => {}\n ti = {}'.format(s,words,ti_var))
         # print(ti_var)
         sh = ''
         idx_type = -1
@@ -224,16 +315,18 @@ class VhdlTypePopup :
                 idx_type = 4
                 sh+='<span class="keyword">generic</span> '
                 link = 'LOCAL@{}:{}'.format(words[0],words[2])
+            elif 'fname' in ti_var:
+                link = 'LINK@{}:{}:{}'.format(ti_var['fname'][0],ti_var['fname'][1],ti_var['fname'][2])
         for i,w in enumerate(words):
             # Check for keyword
-            if w.lower() in ['signal','variable','constant','port','array','downto','upto','of','in','out','inout','entity','component']:
+            if w.lower() in ['signal','variable','constant','port', 'type', 'is','end', 'record','array','downto','to','of','in','out','inout','entity','component']:
                 sh+='<span class="keyword">{0}</span>'.format(w)
             elif w in [':','-','+','=']:
                 sh+='<span class="operator">{0}</span>'.format(w)
             elif re.match(r'\d+',w):
                 sh+='<span class="numeric">{0}</span>'.format(w)
             # Type
-            elif i==idx_type:
+            elif i==idx_type or w.lower() in default_type:
                 sh+='<span class="storage">{0}</span>'.format(w)
             # Variable name
             elif addLink and ti_var and link and w==ti_var['name']:
@@ -249,6 +342,7 @@ class VhdlTypePopup :
 
     def on_navigate(self, href):
         href_s = href.split('@')
+        print(href_s)
         if href_s[0] == 'LOCAL':
             ws = href_s[1].split(':')
             if ws[0] == 'port' :

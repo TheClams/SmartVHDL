@@ -1,0 +1,5 @@
+SmartVHDL 1.7.0 Changelog:
+
+## Improvement ##
+  - Auto-completion : Support for record
+  - Popup : Support for record
