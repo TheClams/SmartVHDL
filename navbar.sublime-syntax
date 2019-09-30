@@ -1,0 +1,100 @@
+%YAML 1.2
+---
+# http://www.sublimetext.com/docs/3/syntax.html
+name: Navigational Bar VHDL
+scope: text.hierarchy-vhdl
+hidden: true
+
+contexts:
+  main:
+    - match: ^\s*(᠎)(\w+)\s*(?=\(|\[)
+      captures:
+        1: meta.annotation.marker.hierarchy-vhdl
+        2: entity.name.hierarchy-vhdl
+      push:
+        - match: \)
+          pop: true
+        - include: constant_numeric
+        - match: \((\w+)
+          captures:
+            1: storage.name.type.hierarchy-vhdl
+    - match: ^\s+(\w+)(?:\s*\((function|task)\))
+      captures:
+        1: entity.name.method.hierarchy-vhdl
+        2: storage.name.method.hierarchy-vhdl
+    - match: ^\s*(\w+)\s*(?=\(|\[)
+      captures:
+        1: entity.name.hierarchy-vhdl
+      push:
+        - match: \)
+          pop: true
+        - include: constant_numeric
+        - match: \((\w+)
+          captures:
+            1: storage.name.type.userdefined.hierarchy-vhdl
+    - match: ^\s+(\*)
+      captures:
+        1: keyword.operator.list.hierarchy-vhdl
+      push:
+        - meta_scope: meta.simple-list.hierarchy-vhdl
+        - match: \n
+          pop: true
+        - include: signals
+    - match: '^\s*(Members|Ports|Signals|Instances)'
+      captures:
+        1: keyword.hierarchy-vhdl
+    - match: '^\s*(Functions|Procedures)\s*(:)'
+      captures:
+        1: keyword.hierarchy-vhdl
+        2: keyword.operator.separator.hierarchy-vhdl
+      push:
+        - include: signals
+        - match: '^  (\w*)'
+          captures:
+            1: entity.name.method.hierarchy-vhdl
+        - match: '(?=^\S)'
+          pop: true
+    - match: '^(\w+)'
+      captures:
+        1: keyword.top-level.hierarchy-vhdl
+        # - include: constant_numeric
+  signals:
+    - match: (<->|<-|->|=>)
+      scope: support.type.hierarchy-vhdl
+    - match: \b(?i:downto|to)\b
+      scope: keyword.control.hierarchy-vhdl
+    - match: (\w+)\s+(:)\s*(\w+)
+      captures:
+        1: source.name.hierarchy-vhdl
+        2: keyword.operator.separator.hierarchy-vhdl
+        3: storage.name.type.hierarchy-vhdl
+    - include: constant_numeric
+
+  constant_numeric:
+    - match: '\b([+\-]?[\d_]+\.[\d_]+([eE][+\-]?[\d_]+)?)\b'
+      scope: constant.numeric.floating_point.vhdl
+    - match: '\b(\d+#)[0-9a-fA-F_]+(#)'
+      scope: constant.numeric.base_pound_number_pound.vhdl
+      captures:
+        1 : punctuation.definition.numeric.hexadecimal.vhdl
+        2 : punctuation.definition.numeric.hexadecimal.vhdl
+    - match: '\b[\d_]+([eE][\d_]+)?\b'
+      scope: constant.numeric.integer.vhdl
+    - match: '(\d*[xX])"[0-9a-fA-F_uUxXzZwWlLhH\-]+"'
+      scope: constant.numeric.quoted.double.string.hex.vhdl
+      captures:
+        1 : punctuation.definition.numeric.hexadecimal.vhdl
+    - match: '(\d*[oO])"[0-7_uUxXzZwWlLhH\-]+"'
+      scope: constant.numeric.quoted.double.string.octal.vhdl
+      captures:
+        1 : punctuation.definition.numeric.octal.vhdl
+    - match: '(\d*[bB]?)"[01_uUxXzZwWlLhH\-]+"'
+      scope: constant.numeric.quoted.double.string.binary.vhdl
+      captures:
+        1 : punctuation.definition.numeric.binary.vhdl
+    - match: '(\d*[bBoOxX]".+?")'
+      scope: constant.numeric.quoted.double.string.illegal.vhdl
+      captures:
+        1: invalid.illegal.quoted.double.string.vhdl
+    - match: '''[01uUxXzZwWlLhH\-]'''
+      scope: constant.numeric.quoted.single.std_logic

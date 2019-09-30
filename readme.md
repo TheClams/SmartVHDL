@@ -10,11 +10,14 @@ The goal of this plugin is to provide IDE-like features for VHDL (similar to my 
 
 Compare to the basic VHDL plugin it already proposes:
 
- - a proper symbol definition for easy code navigation
- - Some basic indentation definition
- - A complete set of snippets written by https://github.com/ccornish
- - Tooltip to get signal definition on mouse hover
- - Generate a design hierarchy (list of every sub-block) (available in the command panel)
+ * a proper symbol definition for easy code navigation
+ * Some basic indentation definition
+ * A complete set of snippets written by https://github.com/ccornish
+ * Tooltip to get signal definition on mouse hover
+ * Generate a design hierarchy (list of every sub-block) (available in the command panel)
+ * Navigation side-bar:
+   - Display instances/procedure/functions inside the current module/package
+   - Double click on instance/type to jump to it
 
 Future features includes code completion (for record, enum, ...), code alignement, block instantiation, ...
 
@@ -85,6 +88,12 @@ To map key to the different feature, simply add the following to your user .subl
 		"context":[
 			{ "key": "selector", "operator": "equal", "operand": "text.result-vhdl"}
 		]
+	},
+	{ "keys": ["f1"], "command": "vhdl_toggle_navbar", "args":{"cmd":"toggle"}},
+	{ "keys": ["ctrl+f1"], "command": "vhdl_toggle_lock_navbar"},
+	{
+	  "keys": ["alt+f1"], "command": "vhdl_show_navbar",
+	  "context":[{ "key": "selector", "operator": "equal", "operand": "source.vhdl"}]
 	}
 
 ```

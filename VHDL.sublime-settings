@@ -21,6 +21,9 @@
 	"vhdl.autoconnect_port_suffix" : [] ,   // List of suffix to remove from the port before looking for a signal connection
 	// Navigation config
 	"vhdl.hierarchy_new_window" : false,  // True to open a new window to display the module hierarchy
+	"vhdl.navbar_width" : 0.3, // Navigation bar width (default 0.2 means 20%)
+	"vhdl.navbar_show_port"   : true, // Show all ports of current module
+	"vhdl.navbar_show_signal" : true, // Show all signal declared in a module
 	// Autocompletion settings
 	"vhdl.disable_autocomplete" : false,  // True to disable auto-completion
 	"vhdl.autocomplete_max_lvl" : 5,      // Max hierachy level for autocompletion (class.struct.field.sub_field == 4 level) , -1 for no limit

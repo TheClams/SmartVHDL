@@ -1,0 +1,19 @@
+SmartVHDL 1.8.0 Changelog:
+
+## Improvement ##
+  - Navigation side-bar: display an entity/architecture ports/instances
+
+## Bug fix ##
+  - Highlight: end loop not marked as error in for loop
+
+## Keybind Update ##
+Example of keybindings to use the new navbar:
+
+```
+  { "keys": ["f1"], "command": "vhdl_toggle_navbar", "args":{"cmd":"toggle"}},
+  { "keys": ["ctrl+f1"], "command": "vhdl_toggle_lock_navbar"},
+  {
+    "keys": ["alt+f1"], "command": "vhdl_show_navbar",
+    "context":[{ "key": "selector", "operator": "equal", "operand": "source.vhdl"}]
+  }
+```

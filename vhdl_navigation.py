@@ -28,6 +28,7 @@ default_type = [
 tooltip_css = ''
 tooltip_flag = 0
 show_ref = True
+colors = {}
 
 def plugin_loaded():
     imp.reload(vhdl_util)
@@ -93,6 +94,8 @@ def init_css():
     tooltip_css+= '.string {{color: {c};}}\n'.format(c=scheme.get_color('string'))
     tooltip_css+= '.extra-info {font-size: 0.9em; }\n'
     tooltip_css+= '.ref_links {font-size: 0.9em; color: #0080D0; padding-left: 0.6em}\n'
+    global colors
+    colors['operator'] = scheme.get_color('keyword.operator')
 
 
 ############################################################################
@@ -112,7 +115,7 @@ def type_info(view, t):
             file_checked.append(fname)
             if fname.lower().endswith(file_ext):
                 # print(v + ' of type ' + t + ' defined in ' + str(fname))
-                tti = vhdl_util.get_type_info_file(fname,t)
+                tti = vhdl_util.get_type_info_file(fname,t,4)
                 if tti['type']:
                     tti['fname'] = (f[0],f[2][0],f[2][1])
                     # print(tti['fname'])
@@ -130,7 +133,7 @@ def type_info_on_hier(view, varname, txt=None, region=None):
         v = va[i].split('[')[0] # retrieve name without array part
         # Get type definition: first iteration is done inside current file
         if i==0:
-            ti = vhdl_util.get_type_info(txt, v)
+            ti = vhdl_util.get_type_info(txt, v,4)
             # print('[type_info_on_hier] level {} : {} has type {}'.format(i,v,ti['type']))
         elif ti and ti['type']:
             ti = type_info(view,ti['type'])
@@ -151,7 +154,7 @@ def type_info_on_hier(view, varname, txt=None, region=None):
 ############################################################################
 callbacks_on_load = {}
 
-class VerilogOnLoadEventListener(sublime_plugin.EventListener):
+class VhdlOnLoadEventListener(sublime_plugin.EventListener):
     # Called when a file is finished loading.
     def on_load_async(self, view):
         global callbacks_on_load
@@ -263,7 +266,7 @@ class VhdlTypePopup :
                 # print('Port {} in module {} defined in {}'.format(var_name,m.group('mname'),info))
                 # TODO: handle component
                 if info['match']:
-                    ti = vhdl_util.get_type_info(info['match'].group('content'),var_name)
+                    ti = vhdl_util.get_type_info(info['match'].group('content'),var_name,4)
                     if ti:
                         txt = ti['decl']
         elif 'entity.name.type.entity' in scope or 'entity.name.type.component' in scope:
@@ -287,7 +290,7 @@ class VhdlTypePopup :
         else :
             # lookup for a signal/variable declaration in current file
             lines = self.view.substr(sublime.Region(0, self.view.line(region).b))
-            ti = vhdl_util.get_type_info(lines,var_name)
+            ti = vhdl_util.get_type_info(lines,var_name,4)
             if ti:
                 txt = ti['decl']
         return txt,ti
@@ -342,7 +345,7 @@ class VhdlTypePopup :
 
     def on_navigate(self, href):
         href_s = href.split('@')
-        print(href_s)
+        # print(href_s)
         if href_s[0] == 'LOCAL':
             ws = href_s[1].split(':')
             if ws[0] == 'port' :
@@ -588,4 +591,540 @@ class VhdlFindInstanceCommand(sublime_plugin.TextCommand):
             v.run_command('insert_snippet',{'contents':str(txt)})
         else :
             sublime.status_message("[VHDL] No instance found !")
+
+######################################################################################
+# Create a new buffer showing the class hierarchy (sub-class instances) of current class #
+navBar = {}
+
+PHANTOM_TEMPLATE = """
+<body id="sv-navbar">
+<style>
+    html, body {{
+        margin: 0;
+        padding: 0;
+        background-color: transparent;
+    }}
+    a {{
+        text-decoration: none;
+        color: {1};
+    }}
+    .content {{color: {1};}}
+</style>
+<span class="content">{0}</span>
+</body>
+"""
+
+
+def getObjName(view):
+    r = view.sel()[0]
+    nameList = []
+    rList = view.find_all(r'(?si)^[ \t]*(entity)\s+(\w+)',0,r'\1 \2',nameList)
+    rList += view.find_all(r'(?si)^[ \t]*(architecture)\s+(?:\w+)\s+of\s+(\w+)',0,r'\1 \2',nameList)
+    rList += view.find_all(r'(?si)^[ \t]*(package)(?:\s+body\b)?\s+(\w+)',0,r'\1 \2',nameList)
+    t = ''
+    name = ''
+    if rList:
+        t,_,name = nameList[0].partition(' ')
+        # Handle case where there is multiple class in a file
+        # and select the one closest to the cursor
+        for (rf,n) in zip(rList,nameList):
+            if rf.a < r.a:
+                t,_,name = n.partition(' ')
+            else:
+                break
+    return t,name
+
+class VhdlShowNavbarCommand(sublime_plugin.TextCommand):
+
+    def run(self,edit):
+        t,name = getObjName(self.view)
+        if not name:
+            return
+        txt = self.view.substr(sublime.Region(0, self.view.size()))
+
+        info = {'type': t, 'name': name, 'port': {}, 'signal': {}, 'inst': [], 'proc':{}, 'func':{}};
+        x = vhdl_util.get_ports(txt,name);
+        if x and 'port' in x:
+            info['port'] = x['port']
+        info['inst'] = vhdl_util.get_inst_list(txt,name);
+        x = vhdl_util.get_signals(txt,name);
+        if x and 'signal' in x:
+            info['signal'] = x['signal']
+        info['proc'] = vhdl_util.get_function_list(txt,name);
+        info['func'] = vhdl_util.get_procedure_list(txt,name);
+
+        sublime.set_timeout_async(lambda info=info, w=self.view.window(): self.showHierarchy(info,w))
+
+    def showHierarchy(self,mi,w):
+        # Save info in global for later access
+        info = {'dict':{}, 'view':None,'fname':''}
+        info['view'] = self.view
+        info['fname'] = self.view.file_name()
+
+        global navBar
+        w = sublime.active_window()
+        wid = w.id()
+        navbar_flag = w.settings().get('navbar-hdl-shared', 0)
+        if wid not in navBar:
+            l = w.get_layout()
+            nb_col = len(l['cols'])
+            if navbar_flag != 0:
+                if nb_col < 2:
+                    navbar_flag = 0
+                else :
+                    gid = len(l['cells'])-1
+                    vl = w.views_in_group(gid)
+                    if len(vl) == 1:
+                        if not vl[0].name().endswith(' Hierarchy') :
+                            navbar_flag = 0
+                    else :
+                        navbar_flag = 0
+            if navbar_flag == 0:
+                l['cols'].append(1.0)
+                width = self.view.settings().get('vhdl.navbar_width',0.2)
+                delta = width / (nb_col-1)
+                for i in range(1,nb_col) :
+                    l['cols'][i] -= i * delta
+                l['cells'].append([nb_col-1,0,nb_col,1])
+                w.set_layout(l)
+                w.focus_group(len(l['cells'])-1)
+                navBarView = w.new_file()
+                navBarView.settings().set("tab_size", 2)
+            else :
+                l = w.get_layout()
+                group_id = len(l['cells'])-1
+                w.focus_group(group_id)
+                navBarView = w.active_view_in_group(group_id)
+                navBarView.run_command("select_all")
+                navBarView.run_command("right_delete")
+            navBarView.set_scratch(True)
+            navBar[wid] = {'view':navBarView, 'settings':{}, 'sv_on': False}
+            navBar[wid]['settings']['update'] = 1
+            navBar[wid]['settings']['show_port'] = self.view.settings().get('vhdl.navbar_port',True)
+            navBar[wid]['settings']['show_signal'] = self.view.settings().get('vhdl.navbar_signal',False)
+        else :
+            navBar[wid]['view'].run_command("select_all")
+            navBar[wid]['view'].run_command("right_delete")
+
+        if 'vhdl' not in navBar[wid]['view'].scope_name(0):
+            navBar[wid]['view'].set_syntax_file('Packages/Smart VHDL/navbar.sublime-syntax')
+        w.settings().set('navbar-hdl-shared', navbar_flag | 2)
+
+        navBar[wid]['info'] = info
+        navBar[wid]['childless'] = []
+
+        # Create content
+        top_level = mi['name']
+        txt = '{}\n'.format(top_level)
+        txt += '-'*len(top_level) + '\n'
+        txt += self.printContent(1,mi,navBar[wid])
+
+        navBar[wid]['view'].set_name(top_level + ' Hierarchy')
+        navBar[wid]['view'].run_command('insert_snippet',{'contents': '$x', 'x':txt})
+
+        # Add phantoms
+        self.build_phantoms(wid)
+
+        # Fold functions arguments
+        navBar[wid]['view'].run_command("fold_by_level", {"level": 2})
+        # Ensure focus is at beginning of file
+        sublime_util.move_cursor(navBar[wid]['view'],0)
+
+    def printContent(self,lvl,ti, nb):
+        txt = ''
+        # print(ti)
+        if 'port' in ti and ti['port'] and (nb['settings']['show_port'] and lvl==1):
+            txt += '{}Ports:\n'.format('  '*(lvl-1))
+            name_len = max([len(x['name']) for x in ti['port']])
+            for p in ti['port'] :
+                d = self.get_dir_symb(p)
+                txt += '{indent}* {dir} {name:<{l}} : {type}\n'.format(indent='  '*lvl,dir=d,name=p['name'],type=p['type'],l=name_len)
+        if 'signal' in ti and ti['signal'] and (nb['settings']['show_signal'] and lvl==1):
+            txt += '{}Signals:\n'.format('  '*(lvl-1))
+            for p in ti['signal'] :
+                txt += '{}* {}\n'.format('  '*lvl,p['decl'])
+        if 'inst' in ti and ti['inst']:
+            if lvl==1 and (nb['settings']['show_port'] or nb['settings']['show_signal']):
+                txt += '{}Instances:\n'.format('  '*(lvl-1))
+            else :
+                lvl -= 1
+            for inst in ti['inst']:
+                if inst[1] in nb['childless']:
+                    symb = u'\u180E'
+                else :
+                    symb = ''
+                txt += '{}{}{name} ({type})\n'.format('  '*lvl,symb,name=inst[0],type=inst[1])
+        if 'proc' in ti and ti['proc'] :
+            txt += '{}Procedures:\n'.format( '  '*(lvl-1))
+            for n,v in ti['proc'].items():
+                txt += '  '*lvl
+                txt += '{name}\n'.format(name=n)
+                if v['args'] :
+                    name_len = max([len(x['name']) for x in v['args']])
+                    for p in v['args'] :
+                        d = self.get_dir_symb(p)
+                        txt += '{indent}* {dir} {name:<{l}} : {type}\n'.format(indent='  '*(lvl+1),dir=d,name=p['name'],type=p['type'],l=name_len)
+        if 'func' in ti and ti['func'] :
+            txt += '{}Procedures:\n'.format( '  '*(lvl-1))
+            for n,v in ti['func'].items():
+                txt += '  '*lvl
+                txt += '{name}\n'.format(name=n)
+                if v['args'] :
+                    name_len = max([len(x['name']) for x in v['args']])
+                    for p in v['args'] :
+                        d = self.get_dir_symb(p)
+                        txt += '{indent}* {dir} {name:<{l}} : {type}\n'.format(indent='  '*(lvl+1),dir=d,name=p['name'],type=p['type'],l=name_len)
+        return txt
+
+    def get_dir_symb(self, ti):
+        if 'tag' in ti and ti['tag'] and ti['tag'].lower()=='constant' :
+            d = ' =>'
+        elif 'dir' not in ti or not ti['dir']:
+            d = ' ->'
+        else :
+            dir_lc = ti['dir'].lower()
+            if dir_lc=='in':
+                d = ' ->'
+            elif dir_lc=='out':
+                d = '<- '
+            elif dir_lc=='inout':
+                d = '<->'
+        return d
+
+    def build_phantoms(self,wid):
+        view = navBar[wid]['view']
+        # Clear exiting phantoms if nay
+        if 'phantomSet' in navBar[wid] :
+            navBar[wid]['view'].erase_phantoms('sv-navbar')
+        phantoms = []
+        pid = 0
+        regions = view.find_by_selector('storage.name.type.userdefined.hierarchy-vhdl')
+        for r in regions :
+            name = view.substr(r)
+            ilc = view.indentation_level(r.a)
+            pnl = view.line(r).b+1
+            iln = view.indentation_level(pnl)
+            # print('[Phantoms] Name {} - Point {} ({}) : indent = {} vs {}, folded = {}'.format(name,pnl,view.rowcol(pnl),iln,ilc,view.is_folded(sublime.Region(pnl))))
+            # print('indent level for member {} = {} {}'.format(name,ilc,iln))
+            if name in navBar[wid]['childless'] :
+                content = '<a>-</a>'
+            elif ilc>=iln :
+                content = '<a href="type:{}:{}:{}:{}">+</a>'.format(name,r.a,ilc,pid)
+            elif view.is_folded(sublime.Region(pnl)) :
+                content = '<a href="unfold:{}:{}">+</a>'.format(r.a,pid)
+            else :
+                content = '<a href="fold:{}:{}">-</a>'.format(r.a,pid)
+            r = sublime.Region(view.line(r).a + ilc*2)
+            phantoms.append(sublime.Phantom(
+                region = r,
+                content=PHANTOM_TEMPLATE.format(content,colors['operator']),
+                layout=sublime.LAYOUT_INLINE,
+                on_navigate=self.on_navigate)
+            )
+            pid += 1
+        regions = view.find_by_selector('meta.annotation.marker')
+        for r in regions :
+            phantoms.append(sublime.Phantom(
+                region = r,
+                content=PHANTOM_TEMPLATE.format('-',colors['operator']),
+                layout=sublime.LAYOUT_INLINE)
+            )
+        if len(phantoms)>0:
+            navBar[wid]['phantomSet'] = sublime.PhantomSet(navBar[wid]['view'], "sv-navbar")
+            navBar[wid]['phantom'] = phantoms
+            navBar[wid]['phantomSet'].update(phantoms)
+
+    def change_phantom(self,wid,v,pid,content):
+        v.erase_phantoms('sv-navbar')
+        navBar[wid]['phantomSet'] = sublime.PhantomSet(v, "sv-navbar")
+        navBar[wid]['phantom'][pid].content = PHANTOM_TEMPLATE.format(content,colors['operator'])
+        navBar[wid]['phantomSet'].update(navBar[wid]['phantom'])
+
+    def on_navigate(self,href):
+        global navBar
+        href_s = href.split(':')
+        w = sublime.active_window()
+        wid = w.id()
+        view = navBar[wid]['info']['view']
+        v =  navBar[wid]['view']
+        # print('[VHDL.Navbar] on_navigate = {}'.format(href_s))
+        if href_s[0]=="type" :
+            if href_s[1] in navBar[wid]['childless'] :
+                self.change_phantom(wid,v,int(href_s[4]),'<a>-</a>')
+                return
+            ti = vhdl_module.lookup_type(view,href_s[1],2)
+            # print(ti)
+            if not ti or 'type' not in ti:
+                navBar[wid]['childless'].append(href_s[1])
+                self.change_phantom(wid,v,int(href_s[4]),'<a>-</a>')
+                # print('Type {} not found: {}'.format(href_s[1],ti))
+                return
+            if ti['type'].lower() == 'architecture' :
+                if 'fname' in ti :
+                    mi = {}
+                    mi['inst'] = vhdl_util.get_inst_list_from_file(ti['fname'][0])
+                    txt = self.printContent(2,mi,navBar[wid])
+                    if txt:
+                        r = self.insert_text_next_line(v,int(href_s[2]),txt)
+                        self.build_phantoms(wid)
+                    else :
+                        navBar[wid]['childless'].append(ti['name'])
+                        self.change_phantom(wid,v,int(href_s[4]),'<a>-</a>')
+            else :
+                # print('Unsupported Type {} not found: {}'.format(href_s[1],ti))
+                return
+        elif href_s[0]=="fold" :
+            r_start = int(href_s[1])
+            s = sublime.Region(v.line(r_start).b+1)
+            s = v.indented_region(s.b)
+            if not s.empty():
+                s.a -= 1
+                s.b -= 1
+                v.fold(s)
+            pid = int(href_s[2])
+            t = '<a href="unfold:{}:{}">+</a>'.format(r_start,pid)
+            self.change_phantom(wid,v,pid,t)
+        elif href_s[0]=="unfold" :
+            r_start = int(href_s[1])
+            s = sublime.Region(v.line(r_start).b+1)
+            v.unfold(s)
+            pid = int(href_s[2])
+            t = '<a href="fold:{}:{}">-</a>'.format(r_start,pid)
+            self.change_phantom(wid,v,pid,t)
+            self.fold_methods(v,s)
+
+    def insert_text_next_line(self, v, r, txt):
+        r = v.line(sublime.Region(r))
+        v.sel().clear()
+        v.sel().add(r.b)
+        # Workaround weird auto-indentation behavior of insert_snippet
+        v.run_command('insert_snippet', {'contents': '\n'})
+        v.run_command('insert_snippet', {'contents': '$x', 'x':txt[:-1]})
+        return r
+
+    def fold_methods(self, v, r_start) :
+        folds = []
+        rs = v.indented_region(r_start.b)
+        r = v.find("Methods:",r_start.b)
+        ilm = v.indentation_level(r.a)+1
+        if r.a >= rs.b:
+            return
+        while(True) :
+            # Go next line
+            r = sublime.Region(v.line(r).b+1)
+            il = v.indentation_level(r.a)
+            if il < ilm or r.b >= rs.b:
+                break
+            else :
+                s = sublime.Region(v.line(r).b+1)
+                il = v.indentation_level(s.a)
+                if il < ilm or r.b >= rs.b:
+                    break
+                elif il > ilm :
+                    s = v.indented_region(s.b)
+                    if not s.empty():
+                        r = s
+                        s.a -= 1
+                        s.b -= 1
+                        folds.append(s)
+        v.fold(folds)
+
+# Toggle Open/close navigation Bar
+class VhdlToggleNavbarCommand(sublime_plugin.WindowCommand):
+
+    def run(self, cmd='toggle'):
+        global navBar
+        wid = self.window.id()
+        av = self.window.active_view()
+        # print('[VHDL] : wid = {}, navbar={}, cmd={}'.format(wid,navBar.keys(),cmd))
+        if wid in navBar and cmd != 'open':
+            nv = navBar[wid]['view']
+            if av is None or av == nv :
+                av = navBar[wid]['info']['view']
+            self.window.settings().set('navbar-hdl-shared', 0)
+            # Close the navBar view
+            if wid not in navBar :
+                return
+            del navBar[wid]
+            sublime.active_window().run_command("verilog_toggle_navbar",{'cmd':'disable'})
+            if cmd == 'disable' :
+                return
+            if cmd == 'toggle' :
+                # print('[VHDL] Focus on view {}'.format(nv.id()))
+                self.window.focus_view(nv)
+                nv.set_scratch(True)
+                self.window.run_command("close_file")
+
+            # Remove the extra group in which the navbar was created
+            l = self.window.get_layout()
+            width = l['cols'][-1] - l['cols'][-2]
+            l['cols'].pop()
+            nb_col = len(l['cols'])
+            if nb_col == 1:
+                return
+            delta = width / (nb_col-1)
+            for i in range(1,nb_col) :
+                l['cols'][i] += i*delta
+            l['cells'].pop()
+            self.window.set_layout(l)
+            # Focus back on initial view
+            # print('Focux back on orginal view!')
+            # print('[VHDL] Focus back on active view {}'.format(av.id()))
+            self.window.focus_view(av)
+        elif self.window.settings().get('navbar-hdl-shared', 0) != 0 and cmd != 'open':
+            self.window.settings().set('navbar-hdl-shared', 0)
+            sublime.active_window().run_command("verilog_toggle_navbar",{'cmd':'close'})
+        elif cmd in ['open','toggle'] and av :
+            # print('[VHDL] Running show navbar')
+            if 'systemverilog' in  av.scope_name(0):
+                av.run_command("verilog_show_navbar")
+            else :
+                av.run_command("vhdl_show_navbar")
+
+# Update the navigation bar
+class VhdlUpdateNavbarCommand(sublime_plugin.EventListener):
+
+    def on_activated_async(self,view):
+        w = sublime.active_window()
+        wid = w.id()
+        if wid not in navBar:
+            return;
+        scope =  view.scope_name(0)
+        # print('[VHDL] : fnamer={} - {} ({}), update={}, scope={}, navbar_flag={}'.format(navBar[wid]['info']['fname'],view.file_name(),view.id(),navBar[wid]['settings']['update'],scope,w.settings().get('navbar-hdl-shared', 0)))
+        if navBar[wid]['info']['fname'] == view.file_name():
+            if 'vhdl' in navBar[wid]['view'].scope_name(0):
+                return
+            elif 'source.vhdl' in scope:
+                view.run_command("vhdl_show_navbar")
+        if navBar[wid]['settings']['update'] == 0:
+            return
+        if 'source.vhdl' in scope:
+            view.run_command("vhdl_show_navbar")
+        elif 'source.systemverilog' in scope:
+            navbar_flag = w.settings().get('navbar-hdl-shared', 0)
+            if navbar_flag & 1 == 0 :
+                view.run_command("verilog_show_navbar")
+
+# Update the navigation bar
+class VhdlToggleLockNavbarCommand(sublime_plugin.WindowCommand):
+
+    def run(self):
+        global navBar
+        wid = self.window.id()
+        if wid in navBar :
+            if navBar[wid]['settings']['update'] == 0:
+                navBar[wid]['settings']['update'] = navBar[wid]['view'].settings().get('vhdl.navbar_update',15)
+                # If default is 0 unlock fully
+                if navBar[wid]['settings']['update'] == 0:
+                    navBar[wid]['settings']['update'] = 15
+                self.window.status_message('VHDL NavBar unlocked ({})'.format(navBar[wid]['settings']['update']))
+            else :
+                navBar[wid]['settings']['update'] = 0
+                self.window.status_message('VHDL NavBar locked ')
+
+
+class VhdlHandleNavbarCommand(sublime_plugin.ViewEventListener):
+
+    @classmethod
+    def is_applicable(cls, settings):
+        return settings.get('syntax') == 'Packages/Smart VHDL/navbar.sublime-syntax'
+
+    def on_close(self):
+        sublime.active_window().run_command("vhdl_toggle_navbar",{'cmd':'close'})
+        sublime.active_window().run_command("verilog_toggle_navbar",{'cmd':'close'})
+
+    def on_text_command(self, command_name, args):
+        # Detect double click
+        double_click = command_name == 'drag_select' and 'by' in args and args['by'] == 'words'
+        if not double_click:
+            return
+        s = self.view.sel()[0]
+        scope = self.view.scope_name(s.a)
+        region = self.view.word(s)
+        name = self.view.substr(region)
+        if name.startswith(u'\u180E'):
+            name = name[1:]
+        w = sublime.active_window()
+        wid = w.id()
+        v = navBar[wid]['info']['view']
+        # print('s = {}, r={} scope="{}"'.format(s,region,scope))
+        if 'userdefined' in scope:
+            ti = vhdl_module.lookup_type(self.view,name,2)
+            if ti and 'fname' in ti and ti['fname'] :
+                fname = '{}:{}:{}'.format(ti['fname'][0],ti['fname'][1],ti['fname'][2])
+                w.focus_view(v)
+                w.open_file(fname,sublime.ENCODED_POSITION)
+        elif 'entity.name.method' in scope:
+            cname = navbar_get_class(self.view,s)
+            if cname :
+                filelist = w.lookup_symbol_in_index(cname)
+                if filelist :
+                    sublime_util.goto_symbol_in_file(v,name,sublime_util.normalize_fname(filelist[0][0]))
+            else :
+                sublime_util.goto_symbol_in_file(v,name,v.file_name())
+                move_to_def(w.active_view(),name)
+        else:
+            cname = navbar_get_class(self.view,s)
+            if cname :
+                # print('[VHDL.Navbar] Class for {} is {}'.format(name,cname))
+                if cname in ['function','task']:
+                    return
+                v,fname = sublime_util.goto_index_symbol(v,cname)
+                if v:
+                    # print('GotoIndexSymbols -> {} ({})'.format(fname,v.id()))
+                    if fname:
+                        global callbacks_on_load
+                        callbacks_on_load[fname] = lambda v=v, name=name: goto_first_occurence(v,name)
+                        return
+                    else :
+                        goto_first_occurence(v,name)
+            else :
+                # print('[VHDL.Navbar] Navigate to first occurence of {}'.format(name))
+                goto_first_occurence(v,name)
+
+def navbar_get_class(view,r):
+    il = view.indentation_level(r.a)
+    # Not local member : find to which class this belongs
+    if il > 1 :
+        r = view.indented_region(r.a)
+        p = view.find_by_class(r.a,False,sublime.CLASS_WORD_START)
+        # If going up one level gives a keyword, it means we need to go up another level
+        scope = view.scope_name(p)
+        if 'keyword' in scope:
+            r = view.indented_region(p)
+            p = view.find_by_class(r.a,False,sublime.CLASS_WORD_START)
+        cname = view.substr(view.word(p))
+    else :
+        cname = ''
+    return cname
+
+
+def goto_first_occurence(view,name):
+    r = sublime.Region(0)
+    max_rb = view.size()
+    while r.b < max_rb :
+        r = view.find(r'\b{}\b'.format(name),r.b)
+        # print('Found "{}" at {} (max={})'.format(name,r,max_rb))
+        if not r:
+            return
+        if 'comment' not in view.scope_name(r.a):
+            break;
+    view.window().focus_view(view)
+    sublime_util.move_cursor(view,r.a)
+
+
+def move_to_def(view,name):
+    if view.sel():
+        r = view.sel()[0]
+    else:
+        r = view.find(r'\b{}\b'.format(name),0)
+    max_rb = view.size()
+    while r.b < max_rb :
+        s = view.scope_name(r.a)
+        if 'definition' in s:
+            sublime_util.move_cursor(view,r.a)
+            return
+        else :
+            r = view.find(r'\b{}\b'.format(name),r.b)
+    # print('Def not found for {}'.format(name))
 

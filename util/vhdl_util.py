@@ -10,6 +10,9 @@ re_port   = r'(?i)^\s*(?P<name>'+s_id_list+r')\s*:\s*(?P<port>in|out|inout)\s+(?
 re_generic = r'(?i)^\s*(?P<name>'+s_id_list+r')\s*:\s*(?P<type>[\w\d\s\(\)]+)(?:\s*:=\s*(?P<value>[^;]+))?'
 re_const  = r'(?i)^\s*(?P<tag>constant)\s+(?P<name>'+s_id_list+r')\s*:\s*(?P<type>[\w\d\s\(\)]+)\s*:=\s*(?P<value>[^;]+)'
 re_record  = r'(?si)^\s*(?P<tag>type)\s+(?P<name>'+s_id_list+r')\s+is\s+(?P<type>record)\b(?P<content>.+?)(end\s+record)'
+re_entity  = r'(?si)^\s*(?P<type>entity)\s+(?P<name>\w+)\s+is\s+\b(?P<content>.+?)(end)'
+re_architecture = r'(?si)^\s*(?P<type>architecture)\s+(?P<tag>\w+)\s+of\s+(?P<name>\w+)\s+is\s+\b(?P<content>.+)(end)'
+re_args = r'(?si)(?:^|;)\s*((?P<tag>signal|variable|constant)\s+)?(?P<name>'+s_id_list+r')\s*:\s*((?P<dir>in|out|inout)\s+)?(?P<type>[^;]+)'
 
 ###############################################################################
 # Clean all comment (useful before parsing file for information)
@@ -29,34 +32,44 @@ def clean_comment(text):
 
 ###############################################################################
 # Extract declaration of var_name from a file
-def get_type_info_file(fname,var_name):
+def get_type_info_file(fname,var_name, flag):
     # print("Parsing file " + fname + " for variable " + var_name)
     fdate = os.path.getmtime(fname)
-    ti = get_type_info_file_cache(fname, var_name, fdate)
+    ti = get_type_info_file_cache(fname, var_name, fdate, flag)
     # print(get_type_info_file_cache.cache_info())
     return ti
 
 @functools.lru_cache(maxsize=32)
-def get_type_info_file_cache(fname, var_name, fdate):
+def get_type_info_file_cache(fname, var_name, fdate, flag):
     with open(fname) as f:
         flines = f.read()
-        ti = get_type_info(flines, var_name)
+        ti = get_type_info(flines, var_name, flag)
     return ti
 
 # Extract the declaration of var_name from txt
 #return a dictionnary with full information
-def get_type_info(txt,var_name):
+def get_type_info(txt,var_name, flag):
     txt = clean_comment(txt)
     txt = re.sub(r'(?si)^[ \t]*component\b.*?\bend\b.*?;','',txt) # remove component declaration
-    re_list = [re_signal, re_port, re_const, re_generic, re_record]
+    re_list = []
+    if flag & 1:
+        re_list += [re_entity]
+    if flag & 2:
+        re_list += [re_architecture]
+    if flag & 3:
+        re_list += [re_signal, re_port, re_const, re_generic, re_record]
+    m = None
     for s in re_list:
         if '<tag>type' in s:
             re_s = s.replace(s_id_list,var_name,1)
+        elif '<type>entity' in s or '<type>architecture' in s:
+            re_s = s.replace('<name>\w+','<name>' + var_name,1)
         else :
             re_s = s.replace(s_id_list,r'(?:[\s\w,]+,\s*)?' + var_name + r'(?:\s*,[\s\w,]+)?',1)
-        m = re.search(re_s, txt, flags=re.MULTILINE)
         # print(re_s)
+        m = re.search(re_s, txt, flags=re.MULTILINE)
         if m:
+            # print(m.groups())
             break
     ti = get_type_info_from_match(var_name,m)[0]
     return ti
@@ -83,21 +96,31 @@ def get_type_info_from_match(var_name,m):
         return [ti_not_found]
     # Prepare common type information
     d = {'decl': '', 'type':m.group('type'), 'name': var_name, 'tag':'', 'value':None}
-    # Extract identifier list if no var name was specified
-    if var_name=='':
-        sig_l = m.group('name').replace(' ','').split(',')
-    else:
-        sig_l = [var_name]
     ti = []
-    if 'tag' in m.groupdict():
-        d['tag'] = m.group('tag')
+    if 'tag' in m.groupdict() and m.group('tag'):
+        d['tag'] = m.group('tag').lower()
     elif 'port' in m.groupdict():
         d['tag'] = 'port'
         d['dir'] = m.group('port')
     else :
         d['tag'] = 'generic'
+    if 'dir' in m.groupdict() and m.group('dir'):
+        d['dir'] = m.group('dir').lower()
     if 'value' in m.groupdict():
         d['value'] = '' if not m.group('value') else m.group('value').strip()
+    # For entity/architecture define decl and return
+    if 'type' in d and d['type']:
+        if d['type'].lower() == 'entity' :
+            d['decl'] = 'entity {}'.format(d['name'])
+            return [d]
+        elif d['type'].lower() == 'architecture' :
+            d['decl'] = 'architecture {} of {}'.format(d['tag'],d['name'])
+            return [d]
+    # Extract identifier list if no var name was specified
+    if var_name=='':
+        sig_l = m.group('name').replace(' ','').split(',')
+    else:
+        sig_l = [var_name]
     for sig in sig_l:
         ti.append(d)
         # Remove other signal from the declaration
@@ -193,5 +216,41 @@ def get_signals(flines,name=r'\w+'):
     # Extract all signals
     for m in re.finditer(re_signal, m.group('decl'), flags=re.MULTILINE):
         info['signal'] += get_type_info_from_match('',m)
+    # print(info)
+    return info
+
+
+# Retrieve the list of functions/procedure inside a block
+def get_function_list(txt,name):
+    txt = clean_comment(txt)
+    # Remove function/procedure to avoid the end;
+    re_str_func = r'(?si)(?P<type>function)\s+(?P<name>\w+)\s*\((?P<args>.*?)\)\s*return(?P<ret>.*?)\b(?P<term>is)'
+    info = {}
+    for m in re.finditer(re_str_func,txt):
+        n = m.group('name')
+        if n in info:
+            continue
+        info[n] = {'return':m.group('name'), 'args': []}
+        args = []
+        for ma in re.finditer(re_args, m.group('args'), flags=re.MULTILINE):
+            info[n]['args'] += get_type_info_from_match('',ma)
+    # print(info)
+    return info
+
+# Retrieve the list of functions/procedure inside a block
+def get_procedure_list(txt,name):
+    txt = clean_comment(txt)
+    # Remove function/procedure to avoid the end;
+    re_str_proc = r'(?si)(?P<type>procedure)\s+(?P<name>\w+)\s*\((?P<args>.*?)\)\s*(?P<term>is|;)'
+    info = {}
+    for m in re.finditer(re_str_proc,txt):
+        n = m.group('name')
+        if n in info:
+            continue
+        info[n] = {'args': []}
+        # print(m.groups())
+        for ma in re.finditer(re_args, m.group('args')+';', flags=re.MULTILINE):
+            # print(ma.groups())
+            info[n]['args'] += get_type_info_from_match('',ma)
     # print(info)
     return info

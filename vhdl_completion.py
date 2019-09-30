@@ -135,7 +135,7 @@ class VerilogAutoComplete(sublime_plugin.EventListener):
             return completion
         w = str.rstrip(self.view.substr(r))
         txt = self.view.substr(sublime.Region(0, self.view.line(r).b))
-        ti = vhdl_util.get_type_info(txt,w) # TODO: add function to retrieve type through multiple level of hierarchy
+        ti = vhdl_util.get_type_info(txt,w,4) # TODO: add function to retrieve type through multiple level of hierarchy
         if self.debug: print('[VHDL::dot_completion] Word = {} -> type = {}'.format(w,ti));
         if not ti or not ti['type'] or ti['type'] in ['std_logic','std_logic_vector']:
             return completion
@@ -153,7 +153,7 @@ class VerilogAutoComplete(sublime_plugin.EventListener):
                 file_checked.append(fname)
                 if fname.lower().endswith(file_ext):
                     # print(w + ' of type ' + ti['type'] + ' defined in ' + str(fname))
-                    tti = vhdl_util.get_type_info_file(fname,ti['type'])
+                    tti = vhdl_util.get_type_info_file(fname,ti['type'],4)
                     if tti['type']:
                         break
         if self.debug: print('[VHDL::dot_completion] => type = {}'.format(tti));

@@ -429,6 +429,43 @@ contexts:
         - include: process_pattern
         - include: block_pattern
         - include: cleanup
+    - match: \b((?i:for))\b(?!\s*(?i:all))
+      captures:
+        1: keyword.language.vhdl
+      push:
+        - meta_scope: meta.block.for.vhdl
+        - match: |-
+            (?x)
+                        # The word end $1
+                        \b((?i:end))\s+
+                        (
+                          # Followed by generate or loop $3
+                           ((?i:generate|loop))
+
+                          # But it really is required $4
+                          |(\S+)
+                        )\b
+
+                        # The matching identifier $7 or an invalid identifier $8
+                        (\s+((\1)|(.+?)))?
+
+                        # Only space and a semicolon left
+                        (?=\s*;)
+
+          captures:
+            1: keyword.language.vhdl
+            3: keyword.language.vhdl
+            4: invalid.illegal.loop.or.generate.required.vhdl
+            7: entity.name.tag.for.generate.end.vhdl
+            8: invalid.illegal.mismatched.identifier.vhdl
+          pop: true
+        - include: control_patterns
+        - include: entity_instantiation_pattern
+        - include: component_pattern
+        - include: component_instantiation_pattern
+        - include: process_pattern
+        - include: block_pattern
+        - include: cleanup
   function_definition_pattern:
     - match: |-
         (?x)
@@ -642,8 +679,15 @@ contexts:
   keywords:
     - match: '''(?i:active|ascending|base|delayed|driving|event|high|image|instance|instance_name|last|last_value|left|leftof|length|low|path|path_name|pos|pred|quiet|range|reverse|reverse_range|right|rightof|simple|simple_name|stable|succ|transaction|val|value)\b'
       scope: variable.other.member.vhdl
-    - match: \b(?i:abs|access|after|alias|all|and|architecture|array|assert|attribute|begin|block|body|buffer|bus|case|component|configuration|constant|disconnect|downto|else|elsif|end|entity|exit|file|for|function|generate|generic|group|guarded|if|impure|in|inertial|inout|is|label|library|linkage|literal|loop|map|mod|nand|new|next|nor|not|null|of|on|open|or|others|out|package|port|postponed|procedure|process|pure|range|record|register|reject|rem|report|return|rol|ror|select|severity|shared|signal|sla|sll|sra|srl|subtype|then|to|transport|type|unaffected|units|until|use|variable|wait|when|while|with|xnor|xor)\b
+    - match: \b(?i:abs|access|after|alias|all|and|architecture|array|assert|attribute|begin|block|body|buffer|bus|case|component|configuration|constant|disconnect|downto|else|elsif|end|entity|exit|file|for|function|generate|generic|group|guarded|if|impure|in|inertial|inout|is|label|library|linkage|literal|loop|map|mod|nand|new|next|nor|not|null|of|on|open|or|others|out|package|port|postponed|procedure|process|pure|range|record|register|reject|rem|report|return|rol|ror|select|severity|shared|signal|sla|sll|sra|srl|subtype|then|to|transport|type|unaffected|units|until|use|variable|when|while|with|xnor|xor)\b
       scope: keyword.language.vhdl
+    - match: \b(?i:wait)\b
+      scope: keyword.language.vhdl
+      push:
+        - match: \b(?i:until|for)\b
+          scope: keyword.language.vhdl
+        - match: '(?=\S)'
+          pop: true
     - match: '(\+|\-|<=|=|=>|:=|>=|>|<|/|\||&|(\*{1,2}))'
       scope: keyword.operator.vhdl
   library_pattern:

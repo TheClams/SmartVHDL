@@ -14,5 +14,9 @@
     {
         "caption": "VHDL: Alignment",
         "command": "vhdl_align"
+    },
+    {
+        "caption": "VHDL: Show/Hide NavBar",
+        "command": "vhdl_toggle_navbar", "args" : {"cmd": "toggle"}
     }
 ]

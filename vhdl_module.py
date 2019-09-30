@@ -17,6 +17,39 @@ def plugin_loaded():
 list_module_files = {}
 lmf_update_ongoing = False
 
+############################################################################
+# Helper functions
+def lookup_type(view, t, flag):
+    ti = None
+    filelist = view.window().lookup_symbol_in_index(t)
+    if filelist:
+        # print(filelist)
+        # Check if symbol is defined in current file first
+        fname = view.file_name()
+        flist_norm = [sublime_util.normalize_fname(f[0]) for f in filelist]
+        if fname in flist_norm:
+            _,_,rowcol = filelist[flist_norm.index(fname)]
+            # print(t + ' defined in current file' + str(fname))
+            ti = vhdl_util.get_type_info_file(fname,t, flag)
+        if ti and ti['type'] and ti['tag']!='typedef' :
+            ti['fname'] = (fname,rowcol[0],rowcol[1])
+        # Consider first file with a valid type definition to be the correct one
+        else:
+            settings = view.settings()
+            file_ext = tuple(settings.get('vhdl.ext',["vhd","vhdl" ]))
+            for f in filelist:
+                fname, display_fname, rowcol = f
+                fname = sublime_util.normalize_fname(fname)
+                # print('Parsing ' + str(fname))
+                if fname.lower().endswith(file_ext):
+                    ti = vhdl_util.get_type_info_file(fname,t, flag)
+                    # print(ti)
+                    if ti['type'] and ti['tag']!='typedef' :
+                        ti['fname'] = (fname,rowcol[0],rowcol[1])
+                        break
+    # print('[VHDL:lookup_type] {0}'.format(ti))
+    return ti
+
 
 ########################################
 # Create module instantiation skeleton #
