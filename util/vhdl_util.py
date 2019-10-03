@@ -56,7 +56,7 @@ def get_type_info(txt,var_name, flag):
         re_list += [re_entity]
     if flag & 2:
         re_list += [re_architecture]
-    if flag & 3:
+    if flag & 4:
         re_list += [re_signal, re_port, re_const, re_generic, re_record]
     m = None
     for s in re_list:

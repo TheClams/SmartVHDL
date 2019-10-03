@@ -1,0 +1,6 @@
+SmartVHDL 1.8.1 Changelog:
+
+## Bug fix ##
+  - Popup:
+  	* Fix regression on signal definition
+
