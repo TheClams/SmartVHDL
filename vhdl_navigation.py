@@ -297,13 +297,13 @@ class VhdlTypePopup :
 
     def color_str(self,s, addLink=False, ti_var=None):
         # Split all text in word, special character, space and line return
-        words = re.findall(r"\w+|[^\w\s]|\s+", s)
+        words = re.findall(r"\w+|<<|>>|[^\w\s]|\s+", s)
         # print('[color_str] String = "{}" \n Split => {}\n ti = {}'.format(s,words,ti_var))
         # print(ti_var)
         sh = ''
         idx_type = -1
         link = ''
-        if words[0].lower() in ['signal','variable','constant']:
+        if words[0].lower() in ['signal','variable','constant','alias']:
             idx_type = 6
             link = 'LOCAL@{}:{}'.format(words[0],words[2])
         elif words[0] in ['port']:
@@ -322,10 +322,13 @@ class VhdlTypePopup :
                 link = 'LINK@{}:{}:{}'.format(ti_var['fname'][0],ti_var['fname'][1],ti_var['fname'][2])
         for i,w in enumerate(words):
             # Check for keyword
-            if w.lower() in ['signal','variable','constant','port', 'type', 'is','end', 'record','array','downto','to','of','in','out','inout','entity','component']:
+            if w.lower() in ['signal','variable','constant','port', 'type', 'is','end', 'record','array','downto','to','of','in','out','inout','entity','component','alias']:
                 sh+='<span class="keyword">{0}</span>'.format(w)
             elif w in [':','-','+','=']:
                 sh+='<span class="operator">{0}</span>'.format(w)
+            elif w in ['<<','>>']:
+                wt = '&lt;&lt;' if w=='<<' else '&gt;&gt;'
+                sh+='<span class="operator">{0}</span>'.format(wt)
             elif re.match(r'\d+',w):
                 sh+='<span class="numeric">{0}</span>'.format(w)
             # Type
@@ -642,14 +645,19 @@ class VhdlShowNavbarCommand(sublime_plugin.TextCommand):
             return
         txt = self.view.substr(sublime.Region(0, self.view.size()))
 
-        info = {'type': t, 'name': name, 'port': {}, 'signal': {}, 'inst': [], 'proc':{}, 'func':{}};
+        info = {
+            'type': t, 'name': name, 'port': {},
+            'signal': {}, 'alias': {}, 'const': {},
+            'inst': [], 'proc':{}, 'func':{}};
         x = vhdl_util.get_ports(txt,name);
         if x and 'port' in x:
             info['port'] = x['port']
         info['inst'] = vhdl_util.get_inst_list(txt,name);
         x = vhdl_util.get_signals(txt,name);
-        if x and 'signal' in x:
-            info['signal'] = x['signal']
+        if x :
+            for t in ['signal', 'const', 'alias'] :
+                if t in x:
+                    info[t] = x[t]
         info['proc'] = vhdl_util.get_function_list(txt,name);
         info['func'] = vhdl_util.get_procedure_list(txt,name);
 
@@ -700,8 +708,10 @@ class VhdlShowNavbarCommand(sublime_plugin.TextCommand):
             navBarView.set_scratch(True)
             navBar[wid] = {'view':navBarView, 'settings':{}, 'sv_on': False}
             navBar[wid]['settings']['update'] = 1
-            navBar[wid]['settings']['show_port'] = self.view.settings().get('vhdl.navbar_port',True)
-            navBar[wid]['settings']['show_signal'] = self.view.settings().get('vhdl.navbar_signal',False)
+            navBar[wid]['settings']['show_port'] = self.view.settings().get('vhdl.navbar_show_port',True)
+            navBar[wid]['settings']['show_signal'] = self.view.settings().get('vhdl.navbar_show_signal',False)
+            navBar[wid]['settings']['show_alias'] = self.view.settings().get('vhdl.navbar_show_alias',False)
+            navBar[wid]['settings']['show_const'] = self.view.settings().get('vhdl.navbar_show_const',False)
         else :
             navBar[wid]['view'].run_command("select_all")
             navBar[wid]['view'].run_command("right_delete")
@@ -732,17 +742,30 @@ class VhdlShowNavbarCommand(sublime_plugin.TextCommand):
 
     def printContent(self,lvl,ti, nb):
         txt = ''
-        # print(ti)
         if 'port' in ti and ti['port'] and (nb['settings']['show_port'] and lvl==1):
             txt += '{}Ports:\n'.format('  '*(lvl-1))
             name_len = max([len(x['name']) for x in ti['port']])
             for p in ti['port'] :
                 d = self.get_dir_symb(p)
                 txt += '{indent}* {dir} {name:<{l}} : {type}\n'.format(indent='  '*lvl,dir=d,name=p['name'],type=p['type'],l=name_len)
+        if 'const' in ti and ti['const'] and (nb['settings']['show_const'] and lvl==1):
+            txt += 'Constants:\n'
+            name_len = max([len(x['name']) for x in ti['const']])
+            for p in ti['const'] :
+                txt += '{indent}* {name:<{l}} : {type} := {value}\n'.format(indent='  '*lvl,name=p['name'],type=p['type'],value=p['value'],l=name_len)
         if 'signal' in ti and ti['signal'] and (nb['settings']['show_signal'] and lvl==1):
-            txt += '{}Signals:\n'.format('  '*(lvl-1))
+            txt += 'Signals:\n'
+            name_len = max([len(x['name']) for x in ti['signal']])
             for p in ti['signal'] :
-                txt += '{}* {}\n'.format('  '*lvl,p['decl'])
+                txt += '{indent}* {name:<{l}} : {type}\n'.format(indent='  '*lvl,name=p['name'],type=p['type'],l=name_len)
+        if 'alias' in ti and ti['alias'] and (nb['settings']['show_alias'] and lvl==1):
+            txt += 'Alias:\n'
+            name_len = max([len(x['name']) for x in ti['alias']])
+            for p in ti['alias'] :
+                if 'type' in p and p['type']!='alias':
+                    txt += '{indent}* {name:<{l}} : {type} := {value}\n'.format(indent='  '*lvl,name=p['name'],type=p['type'],value=p['value'],l=name_len)
+                else :
+                    txt += '{indent}* {name:<{l}} : {value}\n'.format(indent='  '*lvl,name=p['name'],value=p['value'],l=name_len)
         if 'inst' in ti and ti['inst']:
             if lvl==1 and (nb['settings']['show_port'] or nb['settings']['show_signal']):
                 txt += '{}Instances:\n'.format('  '*(lvl-1))

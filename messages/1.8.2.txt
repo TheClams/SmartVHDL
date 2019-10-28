@@ -1,0 +1,8 @@
+SmartVHDL 1.8.2 Changelog:
+
+## Improvements ##
+  - Parser: Support alias
+  - NavBar:
+  	* Can now show alias, const, signals
+  	* Configurable with settings vhdl.navbar_show_signal/alias/const
+

@@ -14,6 +14,9 @@ re_entity  = r'(?si)^\s*(?P<type>entity)\s+(?P<name>\w+)\s+is\s+\b(?P<content>.+
 re_architecture = r'(?si)^\s*(?P<type>architecture)\s+(?P<tag>\w+)\s+of\s+(?P<name>\w+)\s+is\s+\b(?P<content>.+)(end)'
 re_args = r'(?si)(?:^|;)\s*((?P<tag>signal|variable|constant)\s+)?(?P<name>'+s_id_list+r')\s*:\s*((?P<dir>in|out|inout)\s+)?(?P<type>[^;]+)'
 
+re_alias     = r'(?i)^\s*(?P<tag>alias)\s+(?P<name>\w+)\s*:\s*(?P<type>.*?)\bis\s+(?P<value>[^;]+)?'
+re_alias_ref = r'(?i)^\s*(?P<tag>alias)\s+(?P<name>\w+)\s+is\s+<<(?P<value>.*?)>>\s*;'
+
 ###############################################################################
 # Clean all comment (useful before parsing file for information)
 def clean_comment(text):
@@ -57,12 +60,12 @@ def get_type_info(txt,var_name, flag):
     if flag & 2:
         re_list += [re_architecture]
     if flag & 4:
-        re_list += [re_signal, re_port, re_const, re_generic, re_record]
+        re_list += [re_signal, re_port, re_const, re_generic, re_record, re_alias, re_alias_ref]
     m = None
     for s in re_list:
         if '<tag>type' in s:
             re_s = s.replace(s_id_list,var_name,1)
-        elif '<type>entity' in s or '<type>architecture' in s:
+        elif '<type>entity' in s or '<type>architecture' in s or '<tag>alias' in s:
             re_s = s.replace('<name>\w+','<name>' + var_name,1)
         else :
             re_s = s.replace(s_id_list,r'(?:[\s\w,]+,\s*)?' + var_name + r'(?:\s*,[\s\w,]+)?',1)
@@ -95,10 +98,14 @@ def get_type_info_from_match(var_name,m):
     if not m:
         return [ti_not_found]
     # Prepare common type information
-    d = {'decl': '', 'type':m.group('type'), 'name': var_name, 'tag':'', 'value':None}
+    d = {'decl': '', 'type': None, 'name': var_name, 'tag':'', 'value':None}
+    if 'type' in m.groupdict() and m.group('type'):
+        d['type'] = m.group('type')
     ti = []
     if 'tag' in m.groupdict() and m.group('tag'):
         d['tag'] = m.group('tag').lower()
+        if d['tag'] == 'alias' and not d['type']:
+            d['type'] = 'alias'
     elif 'port' in m.groupdict():
         d['tag'] = 'port'
         d['dir'] = m.group('port')
@@ -212,10 +219,16 @@ def get_signals(flines,name=r'\w+'):
     m = re.search(re_str,flines, flags=re.MULTILINE)
     if m is None:
         return None
-    info = {'name': m.group('name'), 'arch': m.group('arch') , 'signal':[]}
+    info = {'name': m.group('name'), 'arch': m.group('arch') , 'signal':[], 'alias':[], 'const':[]}
     # Extract all signals
-    for m in re.finditer(re_signal, m.group('decl'), flags=re.MULTILINE):
-        info['signal'] += get_type_info_from_match('',m)
+    for ms in re.finditer(re_signal, m.group('decl'), flags=re.MULTILINE):
+        info['signal'] += get_type_info_from_match('',ms)
+    for ms in re.finditer(re_alias, m.group('decl'), flags=re.MULTILINE):
+        info['alias'] += get_type_info_from_match('',ms)
+    for ms in re.finditer(re_alias_ref, m.group('decl'), flags=re.MULTILINE):
+        info['alias'] += get_type_info_from_match('',ms)
+    for ms in re.finditer(re_const, m.group('decl'), flags=re.MULTILINE):
+        info['const'] += get_type_info_from_match('',ms)
     # print(info)
     return info
 

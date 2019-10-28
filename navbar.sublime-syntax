@@ -61,14 +61,24 @@ contexts:
   signals:
     - match: (<->|<-|->|=>)
       scope: support.type.hierarchy-vhdl
-    - match: \b(?i:downto|to)\b
+    - match: \b(?i:downto|to|signal|variable)\b
       scope: keyword.control.hierarchy-vhdl
+    - match: (\w+)\s+(:)\s*(signal|variable)\b
+      captures:
+        1: source.name.hierarchy-vhdl
+        2: keyword.operator.separator.hierarchy-vhdl
+        3: keyword.control.hierarchy-vhdl
     - match: (\w+)\s+(:)\s*(\w+)
       captures:
         1: source.name.hierarchy-vhdl
         2: keyword.operator.separator.hierarchy-vhdl
         3: storage.name.type.hierarchy-vhdl
     - include: constant_numeric
+    - include: operator
+
+  operator:
+    - match: (:=|\*|/|-|\+)
+      scope: keyword.operator.hierarchy-vhdl
 
   constant_numeric:
     - match: '\b([+\-]?[\d_]+\.[\d_]+([eE][+\-]?[\d_]+)?)\b'
