@@ -353,7 +353,7 @@ class VhdlDoModuleInstCommand(sublime_plugin.TextCommand):
 
     def check_connect(self,port,sig):
         d = re.sub(r'(?i)^\s*port\b','signal',port['decl'])
-        d = re.sub(r'(?i)\s+(in|out|inout)\s+',' ',d)
+        d = re.sub(r'(?i)\b(in|out|inout)\s+',' ',d)
         warn = ''
         if sig['decl']:
             ds = sig['decl'].lower()
