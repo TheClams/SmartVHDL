@@ -1,0 +1,5 @@
+SmartVHDL 1.8.4 Changelog:
+
+## Bug fix ##
+  - Highlight: Improve support for wait statement
+

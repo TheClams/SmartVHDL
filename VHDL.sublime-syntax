@@ -688,11 +688,18 @@ contexts:
     - match: \b(?i:wait)\b
       scope: keyword.language.vhdl
       push:
-        - match: \b(?i:until|for)\b
-          scope: keyword.language.vhdl
-        - match: '(?=\S)'
+        - match: ;
+          scope: punctuation.terminator.vhdl
           pop: true
-    - match: '(\+|\-|<=|=|=>|:=|>=|>|<|/|\||&|(\*{1,2}))'
+        - match: \b(?i:until|for|on)\b
+          scope: keyword.language.vhdl
+        - include: constants_numeric
+        - include: operators
+        - include: punctuation
+        - match: \b(?i:fs|ps|ns|us|ms|sec|min|hr)\b
+          scope: storage.type.std.standard.vhdl
+  operators:
+    - match: '(\+|\-|<=|=>|:=|>=|=|>|<|/|\||&|(\*{1,2}))'
       scope: keyword.operator.vhdl
   library_pattern:
     - match: \b((?i:library))\s+({{id}})
@@ -1138,7 +1145,11 @@ contexts:
           scope: keyword.operator.psl.vhdl
         - include: constants_numeric
   punctuation:
-    - match: (\.|,|:|;|\(|\))
+    - match: \.
+      scope: punctuation.accessor.vhdl
+    - match: ;
+      scope: punctuation.terminator.vhdl
+    - match: (,|:|\(|\))
       scope: punctuation.vhdl
   record_pattern:
     - match: \b(?i:record)\b
@@ -1171,6 +1182,7 @@ contexts:
         - include: strings
         - include: attribute_list
         - include: keywords
+        - include: operators
         - include: punctuation
         - include: support_constants
         - include: support_types
@@ -1248,6 +1260,7 @@ contexts:
     - include: library_pattern
     - include: hierarchical_pattern
     - include: keywords
+    - include: operators
     - include: punctuation
     - include: support_constants
     - include: support_types
