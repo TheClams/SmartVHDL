@@ -1,0 +1,7 @@
+SmartVHDL 1.8.5 Changelog:
+
+## Bug fix ##
+  - Highlight: 
+    * Fix regression in wait statement
+    * Change scope of logical operator and, nor, ... to follow Sublime convention
+
