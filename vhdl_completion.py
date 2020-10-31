@@ -137,26 +137,30 @@ class VerilogAutoComplete(sublime_plugin.EventListener):
         txt = self.view.substr(sublime.Region(0, self.view.line(r).b))
         ti = vhdl_util.get_type_info(txt,w,4) # TODO: add function to retrieve type through multiple level of hierarchy
         if self.debug: print('[VHDL::dot_completion] Word = {} -> type = {}'.format(w,ti));
-        if not ti or not ti['type'] or ti['type'] in ['std_logic','std_logic_vector']:
+        if not ti or not ti['type'] or ti['type'] in ['std_logic','std_logic_vector','bit','bit_vector','string','integer','real','time','boolean']:
             return completion
 
-        # Try to find type info
-        tti = None
-        filelist = self.view.window().lookup_symbol_in_index(ti['type'])
-        if filelist:
-            file_ext = tuple(self.settings.get('vhdl.ext',['vhd','vhdl']))
-            file_checked = []
-            for f in filelist:
-                fname = sublime_util.normalize_fname(f[0])
-                if fname in file_checked:
-                    continue
-                file_checked.append(fname)
-                if fname.lower().endswith(file_ext):
-                    # print(w + ' of type ' + ti['type'] + ' defined in ' + str(fname))
-                    tti = vhdl_util.get_type_info_file(fname,ti['type'],4)
-                    if tti['type']:
-                        break
+        # Try to find type info: first in current file
+        #check first in current file
+        tti = vhdl_util.get_type_info(txt,ti['type'],4)
+        if not tti or not tti['type']:
+            filelist = self.view.window().lookup_symbol_in_index(ti['type'])
+            # print(filelist);
+            if filelist:
+                file_ext = tuple(self.settings.get('vhdl.ext',['vhd','vhdl']))
+                file_checked = []
+                for f in filelist:
+                    fname = sublime_util.normalize_fname(f[0])
+                    if fname in file_checked:
+                        continue
+                    file_checked.append(fname)
+                    if fname.lower().endswith(file_ext):
+                        # print(w + ' of type ' + ti['type'] + ' defined in ' + str(fname))
+                        tti = vhdl_util.get_type_info_file(fname,ti['type'],4)
+                        if tti['type']:
+                            break
         if self.debug: print('[VHDL::dot_completion] => type = {}'.format(tti));
+        # print('[VHDL::dot_completion] => type = {}'.format(tti));
         if not tti or tti['type']!='record':
             return completion
         completion = self.record_completion(tti['decl'])

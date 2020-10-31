@@ -101,11 +101,17 @@ def init_css():
 ############################################################################
 # Help function to retrieve type
 
-def type_info(view, t):
-    tti = None
-    filelist = view.window().lookup_symbol_in_index(t)
-    if filelist:
-        file_ext = ('vhd','vhdl')
+def type_info(view, t, region):
+    if region:
+        pos = view.line(region).b
+    else:
+        pos = self.view.size()
+    txt = view.substr(sublime.Region(0, pos))
+    tti = vhdl_util.get_type_info(txt,t,4)
+    if not tti or not tti['type']:
+        filelist = view.window().lookup_symbol_in_index(t)
+        if filelist:
+            file_ext = ('vhd','vhdl')
         # file_ext = tuple(self.settings.get('vhdl.ext',['vhd','vhdl']))
         file_checked = []
         for f in filelist:
@@ -136,7 +142,7 @@ def type_info_on_hier(view, varname, txt=None, region=None):
             ti = vhdl_util.get_type_info(txt, v,4)
             # print('[type_info_on_hier] level {} : {} has type {}'.format(i,v,ti['type']))
         elif ti and ti['type']:
-            ti = type_info(view,ti['type'])
+            ti = type_info(view,ti['type'],region)
             # print('[type_info_on_hier] level {} : {} has type {}'.format(i,v,ti['type']))
             if ti and ti['type']=='record' :
                 fti = vhdl_util.get_all_type_info_from_record(ti['decl'])
@@ -227,7 +233,7 @@ class VhdlTypePopup :
             if ti['type'] and ti['tag']:
                 type_base= ti['type'].split('(')[0].lower()
                 if ti['tag'] in ['signal','port'] and type_base not in default_type:
-                    tti = type_info(self.view,ti['type'])
+                    tti = type_info(self.view,ti['type'],region)
                     if tti and tti['type'] == 'record' :
                         fti = vhdl_util.get_all_type_info_from_record(tti['decl'])
                         template='<br><span class="extra-info">{0}{1}</span>'
@@ -278,7 +284,7 @@ class VhdlTypePopup :
             ti = {'decl': '{} {}'.format(t,var_name), 'type':t, 'name':var_name, 'tag':'reference', 'value':None}
             txt = ti['decl']
         elif 'storage.type.userdefined' in scope :
-            ti = type_info(self.view,var_name)
+            ti = type_info(self.view,var_name,region)
             if ti:
                 txt = ti['decl']
                 if ti['type'] == 'record' :

@@ -1,0 +1,6 @@
+SmartVHDL 1.8.6 Changelog:
+
+## Bug fix ##
+  - Parsing: fix regex recursion affecting performance for auto-completion and popup in some files
+  - Auto-complete/Popup: now check custom type in current file
+

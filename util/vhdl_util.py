@@ -4,15 +4,15 @@ import pprint
 import functools
 
 # regular expression for signal/variable declaration:
-s_id_list = r'\w+(\s*,[\s\w,]+)?'
-re_signal = r'(?i)^\s*(?P<tag>signal|variable)\s+(?P<name>'+s_id_list+r')\s*:\s*(?P<type>[^;]+)'
-re_port   = r'(?i)^\s*(?P<name>'+s_id_list+r')\s*:\s*(?P<port>in|out|inout)\s+(?P<type>[^;]+)'
-re_generic = r'(?i)^\s*(?P<name>'+s_id_list+r')\s*:\s*(?P<type>[\w\d\s\(\)]+)(?:\s*:=\s*(?P<value>[^;]+))?'
-re_const  = r'(?i)^\s*(?P<tag>constant)\s+(?P<name>'+s_id_list+r')\s*:\s*(?P<type>[\w\d\s\(\)]+)\s*:=\s*(?P<value>[^;]+)'
-re_record  = r'(?si)^\s*(?P<tag>type)\s+(?P<name>'+s_id_list+r')\s+is\s+(?P<type>record)\b(?P<content>.+?)(end\s+record)'
+s_id_list = r'\w+\b([\s\w,]+)?'
+re_signal = r'(?i)^\s*(?P<tag>signal|variable)\s(?P<name>'+s_id_list+r'):\s*(?P<type>[^;]+)'
+re_port   = r'(?i)^(?P<name>'+s_id_list+r'):\s*(?P<port>in|out|inout)\s+(?P<type>[^;]+)'
+re_generic = r'(?i)^(?P<name>'+s_id_list+r'):\s*(?P<type>[\w\d\s\(\)]+)(?:\s*:=\s*(?P<value>[^;]+))?'
+re_const  = r'(?i)^\s*(?P<tag>constant)\s(?P<name>'+s_id_list+r'):\s*(?P<type>[\w\d\s\(\)]+)\s*:=\s*(?P<value>[^;]+)'
+re_record  = r'(?si)^\s*(?P<tag>type)\s(?P<name>'+s_id_list+r')\sis\s+(?P<type>record)\b(?P<content>.+?)(end\s+record)'
 re_entity  = r'(?si)^\s*(?P<type>entity)\s+(?P<name>\w+)\s+is\s+\b(?P<content>.+?)(end)'
 re_architecture = r'(?si)^\s*(?P<type>architecture)\s+(?P<tag>\w+)\s+of\s+(?P<name>\w+)\s+is\s+\b(?P<content>.+)(end)'
-re_args = r'(?si)(?:^|;)\s*((?P<tag>signal|variable|constant)\s+)?(?P<name>'+s_id_list+r')\s*:\s*((?P<dir>in|out|inout)\s+)?(?P<type>[^;]+)'
+re_args = r'(?si)(?:^|;)\s*((?P<tag>signal|variable|constant)\s+)?(?P<name>'+s_id_list+r'):\s*((?P<dir>in|out|inout)\s+)?(?P<type>[^;]+)'
 
 re_alias     = r'(?i)^\s*(?P<tag>alias)\s+(?P<name>\w+)\s*:\s*(?P<type>.*?)\bis\s+(?P<value>[^;]+)?'
 re_alias_ref = r'(?i)^\s*(?P<tag>alias)\s+(?P<name>\w+)\s+is\s+<<(?P<value>.*?)>>\s*;'
@@ -64,11 +64,11 @@ def get_type_info(txt,var_name, flag):
     m = None
     for s in re_list:
         if '<tag>type' in s:
-            re_s = s.replace(s_id_list,var_name,1)
+            re_s = s.replace(s_id_list,r'\s*{}\s*'.format(var_name),1)
         elif '<type>entity' in s or '<type>architecture' in s or '<tag>alias' in s:
-            re_s = s.replace('<name>\w+','<name>' + var_name,1)
+            re_s = s.replace(r'<name>\w+','<name>' + var_name,1)
         else :
-            re_s = s.replace(s_id_list,r'(?:[\s\w,]+,\s*)?' + var_name + r'(?:\s*,[\s\w,]+)?',1)
+            re_s = s.replace(s_id_list,r'(?:,?\s*)\b' + var_name + r'\b(?:[\s\w,]+)?',1)
         # print(re_s)
         m = re.search(re_s, txt, flags=re.MULTILINE)
         if m:
@@ -130,9 +130,10 @@ def get_type_info_from_match(var_name,m):
         sig_l = [var_name]
     for sig in sig_l:
         ti.append(d)
+        s = sig.strip()
         # Remove other signal from the declaration
-        ti[-1]['decl'] = m.group(0).strip().replace(m.group('name'),sig,1)
-        ti[-1]['name'] = sig
+        ti[-1]['decl'] = m.group(0).strip().replace(m.group('name'),s,1)
+        ti[-1]['name'] = s
         if d['tag']== 'port':
             ti[-1]['decl'] = 'port ' + ti[-1]['decl']
             # remove trailing parenthesis for port
