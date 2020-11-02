@@ -112,20 +112,20 @@ def type_info(view, t, region):
         filelist = view.window().lookup_symbol_in_index(t)
         if filelist:
             file_ext = ('vhd','vhdl')
-        # file_ext = tuple(self.settings.get('vhdl.ext',['vhd','vhdl']))
-        file_checked = []
-        for f in filelist:
-            fname = sublime_util.normalize_fname(f[0])
-            if fname in file_checked:
-                continue
-            file_checked.append(fname)
-            if fname.lower().endswith(file_ext):
-                # print(v + ' of type ' + t + ' defined in ' + str(fname))
-                tti = vhdl_util.get_type_info_file(fname,t,4)
-                if tti['type']:
-                    tti['fname'] = (f[0],f[2][0],f[2][1])
-                    # print(tti['fname'])
-                    break
+            # file_ext = tuple(self.settings.get('vhdl.ext',['vhd','vhdl']))
+            file_checked = []
+            for f in filelist:
+                fname = sublime_util.normalize_fname(f[0])
+                if fname in file_checked:
+                    continue
+                file_checked.append(fname)
+                if fname.lower().endswith(file_ext):
+                    # print(v + ' of type ' + t + ' defined in ' + str(fname))
+                    tti = vhdl_util.get_type_info_file(fname,t,4)
+                    if tti['type']:
+                        tti['fname'] = (f[0],f[2][0],f[2][1])
+                        # print(tti['fname'])
+                        break
     # print(['[type_info] tti={}'.format(tti)])
     return tti
 
@@ -664,8 +664,10 @@ class VhdlShowNavbarCommand(sublime_plugin.TextCommand):
             for t in ['signal', 'const', 'alias'] :
                 if t in x:
                     info[t] = x[t]
-        info['proc'] = vhdl_util.get_function_list(txt,name);
-        info['func'] = vhdl_util.get_procedure_list(txt,name);
+        txt = vhdl_util.clean_comment(txt)
+        info['func'] = vhdl_util.get_function_list(txt, name, True);
+        info['proc'] = vhdl_util.get_procedure_list(txt, name, True);
+        info['process'] = vhdl_util.get_process_list(txt, name, True);
 
         sublime.set_timeout_async(lambda info=info, w=self.view.window(): self.showHierarchy(info,w))
 
@@ -716,6 +718,7 @@ class VhdlShowNavbarCommand(sublime_plugin.TextCommand):
             navBar[wid]['settings']['update'] = 1
             navBar[wid]['settings']['show_port'] = self.view.settings().get('vhdl.navbar_show_port',True)
             navBar[wid]['settings']['show_signal'] = self.view.settings().get('vhdl.navbar_show_signal',False)
+            navBar[wid]['settings']['show_process'] = self.view.settings().get('vhdl.navbar_show_process',False)
             navBar[wid]['settings']['show_alias'] = self.view.settings().get('vhdl.navbar_show_alias',False)
             navBar[wid]['settings']['show_const'] = self.view.settings().get('vhdl.navbar_show_const',False)
         else :
@@ -748,6 +751,7 @@ class VhdlShowNavbarCommand(sublime_plugin.TextCommand):
 
     def printContent(self,lvl,ti, nb):
         txt = ''
+        # print(ti)
         if 'port' in ti and ti['port'] and (nb['settings']['show_port'] and lvl==1):
             txt += '{}Ports:\n'.format('  '*(lvl-1))
             name_len = max([len(x['name']) for x in ti['port']])
@@ -794,7 +798,7 @@ class VhdlShowNavbarCommand(sublime_plugin.TextCommand):
                         d = self.get_dir_symb(p)
                         txt += '{indent}* {dir} {name:<{l}} : {type}\n'.format(indent='  '*(lvl+1),dir=d,name=p['name'],type=p['type'],l=name_len)
         if 'func' in ti and ti['func'] :
-            txt += '{}Procedures:\n'.format( '  '*(lvl-1))
+            txt += '{}Functions:\n'.format( '  '*(lvl-1))
             for n,v in ti['func'].items():
                 txt += '  '*lvl
                 txt += '{name}\n'.format(name=n)
@@ -803,6 +807,11 @@ class VhdlShowNavbarCommand(sublime_plugin.TextCommand):
                     for p in v['args'] :
                         d = self.get_dir_symb(p)
                         txt += '{indent}* {dir} {name:<{l}} : {type}\n'.format(indent='  '*(lvl+1),dir=d,name=p['name'],type=p['type'],l=name_len)
+        if 'process' in ti and ti['process'] and nb['settings']['show_process']:
+            txt += '{}Process:\n'.format( '  '*(lvl-1))
+            for n in ti['process']:
+                txt += '  '*lvl
+                txt += '* {name}\n'.format(name=n)
         return txt
 
     def get_dir_symb(self, ti):

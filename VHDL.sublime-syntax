@@ -367,6 +367,7 @@ contexts:
         - include: comments
         - include: generic_list_pattern
         - include: port_list_pattern
+        - include: process_pattern
         - include: cleanup
   for_pattern:
     - match: |-

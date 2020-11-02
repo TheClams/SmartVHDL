@@ -144,7 +144,7 @@ def get_type_info_from_match(var_name,m):
         # Cleanup multiple spaces
         ti[-1]['decl'] = re.sub(r'\s+',' ', ti[-1]['decl'] )
         ti[-1]['type'] = re.sub(r'\s+',' ', ti[-1]['type'])
-    #print(ti)
+    # print(ti)
     return ti
 
 ###############################################################################
@@ -234,9 +234,10 @@ def get_signals(flines,name=r'\w+'):
     return info
 
 
-# Retrieve the list of functions/procedure inside a block
-def get_function_list(txt,name):
-    txt = clean_comment(txt)
+# Retrieve the list of functions inside a block
+def get_function_list(txt,name, cleaned=False):
+    if not cleaned:
+        txt = clean_comment(txt)
     # Remove function/procedure to avoid the end;
     re_str_func = r'(?si)(?P<type>function)\s+(?P<name>\w+)\s*\((?P<args>.*?)\)\s*return(?P<ret>.*?)\b(?P<term>is)'
     info = {}
@@ -251,9 +252,10 @@ def get_function_list(txt,name):
     # print(info)
     return info
 
-# Retrieve the list of functions/procedure inside a block
-def get_procedure_list(txt,name):
-    txt = clean_comment(txt)
+# Retrieve the list of procedure inside a block
+def get_procedure_list(txt,name, cleaned=False):
+    if not cleaned:
+        txt = clean_comment(txt)
     # Remove function/procedure to avoid the end;
     re_str_proc = r'(?si)(?P<type>procedure)\s+(?P<name>\w+)\s*\((?P<args>.*?)\)\s*(?P<term>is|;)'
     info = {}
@@ -267,4 +269,15 @@ def get_procedure_list(txt,name):
             # print(ma.groups())
             info[n]['args'] += get_type_info_from_match('',ma)
     # print(info)
+    return info
+
+# Retrieve the list of process inside a block
+def get_process_list(txt,name, cleaned=False):
+    if not cleaned:
+        txt = clean_comment(txt)
+    # Remove function/procedure to avoid the end;
+    re_str_proc = r'(?si)(?P<name>\w+)\s*:\s*(?P<type>process)'
+    info = []
+    for m in re.finditer(re_str_proc,txt):
+        info.append(m.group('name'))
     return info

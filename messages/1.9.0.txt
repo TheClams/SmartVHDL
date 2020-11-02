@@ -1,0 +1,7 @@
+SmartVHDL 1.9.0 Changelog:
+
+## Improvement ##
+  - NavBar:
+    * Can now display list of named process
+    * Can be disabled with the setting "vhdl.navbar_show_process" set to false
+

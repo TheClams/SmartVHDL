@@ -24,8 +24,9 @@
 	"vhdl.navbar_width" : 0.3, // Navigation bar width (default 0.2 means 20%)
 	"vhdl.navbar_show_port"   : true, // Show all ports of current module
 	"vhdl.navbar_show_signal" : true, // Show all signal declared in a module
-	"vhdl.navbar_show_alias"  : true, // Show all signal declared in a module
-	"vhdl.navbar_show_const"  : true, // Show all signal declared in a module
+	"vhdl.navbar_show_process": true, // Show all named process declared in a module
+	"vhdl.navbar_show_alias"  : true, // Show all alias declared in a module
+	"vhdl.navbar_show_const"  : true, // Show all const declared in a module
 	// Autocompletion settings
 	"vhdl.disable_autocomplete" : false,  // True to disable auto-completion
 	"vhdl.autocomplete_max_lvl" : 5,      // Max hierachy level for autocompletion (class.struct.field.sub_field == 4 level) , -1 for no limit
