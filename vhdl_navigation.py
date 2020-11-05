@@ -1156,6 +1156,7 @@ def goto_first_occurence(view,name):
 
 
 def move_to_def(view,name,debug=False):
+    sublime.active_window().focus_view(view)
     if view.sel():
         r = view.sel()[0]
     else:
