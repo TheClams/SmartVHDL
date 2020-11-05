@@ -1102,9 +1102,9 @@ class VhdlHandleNavbarCommand(sublime_plugin.ViewEventListener):
                 if filelist :
                     sublime_util.goto_symbol_in_file(v,name,sublime_util.normalize_fname(filelist[0][0]))
             else :
-                sublime_util.goto_symbol_in_file(v,name,v.file_name())
-                sublime.set_timeout(lambda w=w, name=name, debug=debug: move_to_def(w.active_view(),name,debug))
-                # move_to_def(w.active_view(),name,debug)
+                # sublime_util.goto_symbol_in_file(v,name,v.file_name())
+                # sublime.set_timeout(lambda w=w, name=name, debug=debug: move_to_def(w.active_view(),name,debug))
+                move_to_def(v,name,debug)
         else:
             cname = navbar_get_class(self.view,s)
             if cname :
