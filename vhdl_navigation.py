@@ -1085,7 +1085,8 @@ class VhdlHandleNavbarCommand(sublime_plugin.ViewEventListener):
         w = sublime.active_window()
         wid = w.id()
         v = navBar[wid]['info']['view']
-        # print('s = {}, r={} scope="{}"'.format(s,region,scope))
+        debug = v.settings().get("vhdl.debug", False)
+        if debug: print('[NavBar: DoubleClick] s = {}, r={} scope="{}"'.format(s,region,scope))
         if 'userdefined' in scope:
             ti = vhdl_module.lookup_type(self.view,name,2)
             if ti and 'fname' in ti and ti['fname'] :
@@ -1094,13 +1095,15 @@ class VhdlHandleNavbarCommand(sublime_plugin.ViewEventListener):
                 w.open_file(fname,sublime.ENCODED_POSITION)
         elif 'entity.name.method' in scope:
             cname = navbar_get_class(self.view,s)
+            if debug: print('[NavBar: DoubleClick] class name = {}'.format(cname))
             if cname :
                 filelist = w.lookup_symbol_in_index(cname)
+                if debug: print('[NavBar: DoubleClick] filelist = {}'.format(filelist))
                 if filelist :
                     sublime_util.goto_symbol_in_file(v,name,sublime_util.normalize_fname(filelist[0][0]))
             else :
                 sublime_util.goto_symbol_in_file(v,name,v.file_name())
-                move_to_def(w.active_view(),name)
+                move_to_def(w.active_view(),name,debug)
         else:
             cname = navbar_get_class(self.view,s)
             if cname :
@@ -1151,18 +1154,24 @@ def goto_first_occurence(view,name):
     sublime_util.move_cursor(view,r.a)
 
 
-def move_to_def(view,name):
+def move_to_def(view,name,debug=False):
     if view.sel():
         r = view.sel()[0]
     else:
         r = view.find(r'\b{}\b'.format(name),0)
     max_rb = view.size()
+    if debug: print('[move_to_def] Region = {} (nbSel = {}) / Max = {}'.format(r,len(view.sel()),max_rb))
     while r.b < max_rb :
         s = view.scope_name(r.a)
+        if debug: print('[move_to_def] Scope = {} @ {}'.format(s,r))
         if 'definition' in s:
             sublime_util.move_cursor(view,r.a)
             return
         else :
-            r = view.find(r'\b{}\b'.format(name),r.b)
+            prev = r.a
+            r = view.find(r'\b{}\b'.format(name),r.b,sublime.IGNORECASE)
+            if r is None or r.a == prev :
+                if debug: print('[move_to_def] Aborting search, new region = {} '.format(s,r))
+                return
     # print('Def not found for {}'.format(name))
 
