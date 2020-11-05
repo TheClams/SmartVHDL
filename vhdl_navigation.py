@@ -1103,7 +1103,8 @@ class VhdlHandleNavbarCommand(sublime_plugin.ViewEventListener):
                     sublime_util.goto_symbol_in_file(v,name,sublime_util.normalize_fname(filelist[0][0]))
             else :
                 sublime_util.goto_symbol_in_file(v,name,v.file_name())
-                move_to_def(w.active_view(),name,debug)
+                sublime.set_timeout(lambda w=w, name=name, debug=debug: move_to_def(w.active_view(),name,debug))
+                # move_to_def(w.active_view(),name,debug)
         else:
             cname = navbar_get_class(self.view,s)
             if cname :
@@ -1170,7 +1171,7 @@ def move_to_def(view,name,debug=False):
         else :
             prev = r.a
             r = view.find(r'\b{}\b'.format(name),r.b,sublime.IGNORECASE)
-            if r is None or r.a == prev :
+            if r is None or r.a == prev or r.a < 0 :
                 if debug: print('[move_to_def] Aborting search, new region = {} '.format(s,r))
                 return
     # print('Def not found for {}'.format(name))
