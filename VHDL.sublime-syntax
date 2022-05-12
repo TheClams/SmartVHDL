@@ -55,6 +55,8 @@ contexts:
         - include: block_pattern
         - include: type_pattern
         - include: constant_pattern
+        - include: attribute_decl_pattern
+        - include: attribute_set_pattern
         - include: signal_pattern
         - include: variable_pattern
         - include: record_pattern
@@ -1391,6 +1393,43 @@ contexts:
         - match: \b({{id}})\s*(?=:=)
           captures:
             1: storage.type.userdefined.vhdl
+  attribute_decl_pattern:
+    - match: |-
+        (?x)
+          # The word type $1
+          \b((?i:attribute))\s+
+          # Valid identifier $3 or invalid identifier $4
+          ({{id}})\s*(:)
+      captures:
+        1: keyword.language.vhdl
+        2: entity.name.type.attribute.vhdl
+        3: punctuation.vhdl
+      push:
+        - meta_scope: meta.block.attribute.vhdl
+        - match: ;
+          captures:
+            0: punctuation.vhdl
+          pop: true
+        - include: cleanup
+  attribute_set_pattern:
+    - match: |-
+        (?x)
+          # The word type $1
+          \b((?i:attribute))\s+
+          # Valid identifier $3 or invalid identifier $4
+          ({{id}})\s+(of)\s+({{id}})\s*(:)
+      captures:
+        1: keyword.language.vhdl
+        2: constant.other.attribute.vhdl
+        3: keyword.language.vhdl
+        5: punctuation.vhdl
+      push:
+        - meta_scope: meta.block.attribute.vhdl
+        - match: ;
+          captures:
+            0: punctuation.vhdl
+          pop: true
+        - include: cleanup
   variable_pattern:
     - match: |-
         (?x)
