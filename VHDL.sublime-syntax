@@ -29,43 +29,58 @@ contexts:
         5: keyword.language.vhdl
         7: entity.name.type.entity.reference.vhdl
         8: invalid.illegal.invalid.identifier.vhdl
-      push:
-        - meta_scope: meta.block.architecture
-        - match: |-
-            (?x)
-                # The word end $1
-                \b((?i:end))
-                # Optional word architecture $3
-                (\s+((?i:architecture)))?
-                # Optional same identifier $6 or illegal identifier $7
-                (\s+((\3)|(.+?)))?
-                # This will cause the previous to capture until just before the ; or $
-                (?=\s*;)
-          captures:
-            1: keyword.language.vhdl
-            3: keyword.language.vhdl
-            6: entity.name.type.architecture.end.vhdl
-            7: invalid.illegal.mismatched.identifier.vhdl
-          pop: true
-        - include: function_definition_pattern
-        - include: procedure_definition_pattern
-        - include: component_pattern
-        - include: if_pattern
-        - include: process_pattern
-        - include: block_pattern
-        - include: type_pattern
-        - include: constant_pattern
-        - include: attribute_decl_pattern
-        - include: attribute_set_pattern
-        - include: signal_pattern
-        - include: variable_pattern
-        - include: record_pattern
-        - include: for_pattern
-        - include: case_pattern
-        - include: entity_instantiation_pattern
-        - include: component_instantiation_pattern
-        - include: cleanup
-        - include: tag_pattern
+      push: [architecture_stmt, architecture_decl]
+  architecture_decl:
+    - include: function_definition_pattern
+    - include: procedure_definition_pattern
+    - include: component_pattern
+    - include: for_cfg_pattern
+    - include: type_pattern
+    - include: constant_pattern
+    - include: attribute_decl_pattern
+    - include: attribute_set_pattern
+    - include: signal_pattern
+    - include: variable_pattern
+    - include: record_pattern
+    - match: \bbegin\b
+      scope: keyword.language.vhdl
+      pop: true
+      # set: architecture_stmt
+    # Ensure if needed, likely not ..
+    - include: if_pattern
+    - include: process_pattern
+    - include: block_pattern
+    - include: case_pattern
+    #
+    - include: cleanup
+  architecture_stmt:
+    - meta_scope: meta.block.architecture
+    - match: |-
+        (?x)
+            # The word end $1
+            \b((?i:end))
+            # Optional word architecture $3
+            (\s+((?i:architecture)))?
+            # Optional same identifier $6 or illegal identifier $7
+            (\s+((\3)|(.+?)))?
+            # This will cause the previous to capture until just before the ; or $
+            (?=\s*;)
+      captures:
+        1: keyword.language.vhdl
+        3: keyword.language.vhdl
+        6: entity.name.type.architecture.end.vhdl
+        7: invalid.illegal.mismatched.identifier.vhdl
+      pop: true
+    - include: if_pattern
+    - include: process_pattern
+    - include: block_pattern
+    - include: for_pattern
+    - include: case_pattern
+    - include: entity_instantiation_pattern
+    - include: component_instantiation_pattern
+    - include: cleanup
+    - include: tag_pattern
+
   attribute_list:
     - match: \'\(
       captures:
@@ -230,28 +245,29 @@ contexts:
         - include: port_list_pattern
         - include: comments
   constants_numeric:
-    - match: '\b([+\-]?[\d_]+\.[\d_]+([eE][+\-]?[\d_]+)?)\b'
-      scope: constant.numeric.floating_point.vhdl
-    - match: '\b(\d+#)[0-9a-fA-F_]+(#)'
+    - match: '\b(\d+#)(?:[0-9a-fA-F_]+\.)?[0-9a-fA-F_]+(#)(?:([eE])([+\-]?[\d_]+))?'
       scope: constant.numeric.base_pound_number_pound.vhdl
       captures:
-        1 : punctuation.definition.numeric.hexadecimal.vhdl
-        2 : punctuation.definition.numeric.hexadecimal.vhdl
-    - match: '\b[\d_]+([eE][\d_]+)?\b'
+        1: punctuation.definition.numeric.hexadecimal.vhdl
+        2: punctuation.definition.numeric.hexadecimal.vhdl
+        3: punctuation.definition.numeric.hexadecimal.vhdl
+    - match: '\b([+\-]?[\d_]+(\.[\d_]+)([eE][+\-]?[\d_]+)?)\b'
+      scope: constant.numeric.floating_point.vhdl
+    - match: '\b[\d_]+([eE][+\-]?[\d_]+)?\b'
       scope: constant.numeric.integer.vhdl
-    - match: '(\d*[xX])"[0-9a-fA-F_uUxXzZwWlLhH\-]+"'
+    - match: '(\d*[sSuU]?[xX])"[0-9a-fA-F_uUxXzZwWlLhH\-]+"'
       scope: constant.numeric.quoted.double.string.hex.vhdl
       captures:
         1 : punctuation.definition.numeric.hexadecimal.vhdl
-    - match: '(\d*[oO])"[0-7_uUxXzZwWlLhH\-]+"'
+    - match: '(\d*[sSuU]?[oO])"[0-7_uUxXzZwWlLhH\-]+"'
       scope: constant.numeric.quoted.double.string.octal.vhdl
       captures:
         1 : punctuation.definition.numeric.octal.vhdl
-    - match: '(\d*[bB]?)"[01_uUxXzZwWlLhH\-]+"'
+    - match: '(\d*[sSuU]?[bB]?)"[01_uUxXzZwWlLhH\-]+"'
       scope: constant.numeric.quoted.double.string.binary.vhdl
       captures:
         1 : punctuation.definition.numeric.binary.vhdl
-    - match: '(\d*[bBoOxX]".+?")'
+    - match: '(\d*[sSuU]?[bBoOxX]".+?")'
       scope: constant.numeric.quoted.double.string.illegal.vhdl
       captures:
         1: invalid.illegal.quoted.double.string.vhdl
@@ -371,6 +387,36 @@ contexts:
         - include: port_list_pattern
         - include: process_pattern
         - include: cleanup
+  for_cfg_pattern:
+    - match: \b(?i:for)\b
+      scope: keyword.language.vhdl
+      push: [cfg_use,id_list]
+  id_list:
+    - match: '{{id}}'
+    - match: \,
+      scope: punctuation.vhdl
+    - match: ':'
+      scope: punctuation.vhdl
+      pop: true
+    - match: '\S+?'
+      scope: invalid.illegal.invalid.identifier.vhdl
+  cfg_use:
+    - match: '({{id}})\s+(use)\s+(entity\s+)?(?:({{id}})(\.))?({{id}})\s*(\()({{id}})(\))'
+      captures:
+        1: storage.type.entity.reference.vhdl
+        2: keyword.language.vhdl
+        3: keyword.language.vhdl
+        4: entity.name.tag.library.reference.vhdl
+        5: punctuation.vhdl
+        6: storage.type.entity.reference.vhdl
+        7: punctuation.vhdl
+        8: entity.name.tag.architecture.reference.vhdl
+        9: punctuation.vhdl
+    - match: ';'
+      scope: punctuation.vhdl
+      pop: true
+    - match: '\S+?'
+      scope: invalid.illegal.invalid.identifier.vhdl
   for_pattern:
     - match: |-
         (?x)
@@ -711,10 +757,17 @@ contexts:
       scope: keyword.operator.word.vhdl
 
   library_pattern:
-    - match: \b((?i:library))\s+({{id}})
-      captures:
-        1: keyword.language.vhdl
-        2: support.library.vhdl
+    - match: \b(?i:library)\b
+      scope: keyword.language.vhdl
+      push:
+        - match: \,
+          scope: punctuation.vhdl
+        - match: '{{id}}'
+          scope: support.library.vhdl
+        - match: ;
+          scope: punctuation.vhdl
+          pop: true
+
     - match: \b(?i:use)\b
       scope: keyword.language.vhdl
       push:
@@ -890,15 +943,18 @@ contexts:
             - match: '\b({{id}})\s*(:)\s*(in\b|out\b|inout\b)'
               captures:
                 # 1 : variable.parameter.port.vhdl
-                2 : punctuation.vhdl
-                3 : keyword.language.direction.vhdl
+                2: punctuation.vhdl
+                3: keyword.language.direction.vhdl
               push:
                 - meta_scope: meta.list.port.vhdl
                 - match: (?=;|\)|,)
                   pop: true
-                - match: '({{id}})\s*(?=;|\(|$|\)|,|--)'
+                - match: '({{id}})\s*(?=;|\(|$|\)|,|--|:=)'
                   captures :
                     1 : storage.type.userdefined.vhdl
+                - match: '(:=)\s*({{id}})(?!")'
+                  captures:
+                    1: keyword.operator.vhdl
                 - include: comments
                 - include: parenthetical_pair
                 - include: cleanup
@@ -982,7 +1038,7 @@ contexts:
             6: entity.name.function.procedure.end.vhdl
             7: invalid.illegal.mismatched.identifier.vhdl
           pop: true
-        - include: parenthetical_list
+        - include: parenthetical_list_port
         - include: control_patterns
         - include: type_pattern
         - include: constant_pattern
@@ -1006,7 +1062,7 @@ contexts:
           captures:
             0: punctual.vhdl
           pop: true
-        - include: parenthetical_list
+        - include: parenthetical_list_port
   process_pattern:
     - match: |-
         (?x)
@@ -1370,29 +1426,32 @@ contexts:
             - include: cleanup
         - include: record_pattern
         - include: cleanup
+
   constant_pattern:
-    - match: |-
-        (?x)
-          # The word type $1
-          \b((?i:constant))\s+
-          # Valid identifier $3 or invalid identifier $4
-          (({{id}})|(.+?))\s*
-          (:)
+    - match: \b(?i:constant)\b
+      scope: keyword.language.vhdl
+      push: [constant_body,constant_id_list]
+  constant_id_list:
+    - match: '{{id}}'
+      scope: support.library.vhdl
+    - match: \,
+      scope: punctuation.vhdl
+    - match: ':'
+      scope: punctuation.vhdl
+      pop: true
+    - match: '\S+?'
+      scope: invalid.illegal.invalid.identifier.vhdl
+  constant_body:
+    - meta_scope: meta.block.constant.vhdl
+    - match: ;
       captures:
-        1: keyword.language.vhdl
-        3: entity.name.type.constant.vhdl
-        4: invalid.illegal.invalid.identifier.vhdl
-        5: punctuation.vhdl
-      push:
-        - meta_scope: meta.block.constant.vhdl
-        - match: ;
-          captures:
-            0: punctuation.vhdl
-          pop: true
-        - include: cleanup
-        - match: \b({{id}})\s*(?=:=)
-          captures:
-            1: storage.type.userdefined.vhdl
+        0: punctuation.vhdl
+      pop: true
+    - include: cleanup
+    - match: \b({{id}})\s*(?=:=)
+      captures:
+        1: storage.type.userdefined.vhdl
+
   attribute_decl_pattern:
     - match: |-
         (?x)

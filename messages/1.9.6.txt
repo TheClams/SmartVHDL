@@ -1,0 +1,9 @@
+SmartVHDL 1.9.6 Changelog:
+
+## Bug Fixes ##
+  - Syntax Highlight:
+    * Support list of identifier in library and constant declaration
+    * Support sign specifier in bit string literals (i.e. 4sb"1011")
+    * Support more floating/exponential literals
+    * Fix configuration selection in architecture declaration part
+    * Fix usertype highlight inside procedure port declaration
