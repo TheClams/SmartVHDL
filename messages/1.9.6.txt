@@ -7,3 +7,4 @@ SmartVHDL 1.9.6 Changelog:
     * Support more floating/exponential literals
     * Fix configuration selection in architecture declaration part
     * Fix usertype highlight inside procedure port declaration
+  - NavBar: fix issue with jump to procedure/function being inconsistent

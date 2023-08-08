@@ -1095,15 +1095,15 @@ class VhdlHandleNavbarCommand(sublime_plugin.ViewEventListener):
                 w.open_file(fname,sublime.ENCODED_POSITION)
         elif 'entity.name.method' in scope:
             cname = navbar_get_class(self.view,s)
-            if debug: print('[NavBar: DoubleClick] class name = {}'.format(cname))
             if cname :
                 filelist = w.lookup_symbol_in_index(cname)
-                if debug: print('[NavBar: DoubleClick] filelist = {}'.format(filelist))
+                if debug: print('[NavBar: DoubleClick] Class {} -> filelist = {}'.format(cname, filelist))
                 if filelist :
                     sublime_util.goto_symbol_in_file(v,name,sublime_util.normalize_fname(filelist[0][0]))
             else :
                 # sublime_util.goto_symbol_in_file(v,name,v.file_name())
                 # sublime.set_timeout(lambda w=w, name=name, debug=debug: move_to_def(w.active_view(),name,debug))
+                if debug: print('[NavBar: DoubleClick] MoveToDef of {}'.format(name))
                 move_to_def(v,name,debug)
         else:
             cname = navbar_get_class(self.view,s)
@@ -1157,12 +1157,10 @@ def goto_first_occurence(view,name):
 
 def move_to_def(view,name,debug=False):
     sublime.active_window().focus_view(view)
-    if view.sel():
-        r = view.sel()[0]
-    else:
-        r = view.find(r'\b{}\b'.format(name),0)
+    r = view.find(r'\b{}\b'.format(name),0)
     max_rb = view.size()
     if debug: print('[move_to_def] Region = {} (nbSel = {}) / Max = {}'.format(r,len(view.sel()),max_rb))
+    tmp = -1
     while r.b < max_rb :
         s = view.scope_name(r.a)
         if debug: print('[move_to_def] Scope = {} @ {}'.format(s,r))
@@ -1170,10 +1168,14 @@ def move_to_def(view,name,debug=False):
             sublime_util.move_cursor(view,r.a)
             return
         else :
+            if tmp==-1 and 'prototype' in s:
+                tmp = r.a
             prev = r.a
             r = view.find(r'\b{}\b'.format(name),r.b,sublime.IGNORECASE)
             if r is None or r.a == prev or r.a < 0 :
                 if debug: print('[move_to_def] Aborting search, new region = {} '.format(s,r))
+                if tmp != -1:
+                    sublime_util.move_cursor(view,tmp)
                 return
-    # print('Def not found for {}'.format(name))
+    if debug: print('Def not found for {}'.format(name))
 
