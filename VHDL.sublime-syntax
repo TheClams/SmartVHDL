@@ -31,6 +31,7 @@ contexts:
         8: invalid.illegal.invalid.identifier.vhdl
       push: [architecture_stmt, architecture_decl]
   architecture_decl:
+    - meta_scope: meta.block.architecture.decl
     - include: function_definition_pattern
     - include: procedure_definition_pattern
     - include: component_pattern
@@ -42,7 +43,7 @@ contexts:
     - include: signal_pattern
     - include: variable_pattern
     - include: record_pattern
-    - match: \bbegin\b
+    - match: \b(?i:begin)\b
       scope: keyword.language.vhdl
       pop: true
       # set: architecture_stmt
@@ -749,7 +750,7 @@ contexts:
         - include: support_functions
         - include: constants_numeric
         - include: operators
-        
+
   operators:
     - match: '(\+|\-|<=|=>|:=|>=|=|>|<|/|\||&|(\*{1,2}))'
       scope: keyword.operator.vhdl
@@ -940,7 +941,7 @@ contexts:
               captures:
                 0: meta.item.stopping.character.vhdl punctuation.vhdl
               pop: true
-            - match: '\b({{id}})\s*(:)\s*(in\b|out\b|inout\b)'
+            - match: '\b({{id}})\s*(:)\s*(?i:(in\b|out\b|inout\b))'
               captures:
                 # 1 : variable.parameter.port.vhdl
                 2: punctuation.vhdl
