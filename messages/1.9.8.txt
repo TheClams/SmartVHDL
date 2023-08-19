@@ -1,0 +1,4 @@
+SmartVHDL 1.9.7 Changelog:
+
+## Bug Fixes ##
+  - Module instance: fix regexp

@@ -1,4 +1,5 @@
 # Specify filepatterns you want git to ignore.
 Default (Windows).sublime-keymap
 test/*
+tmp/*
 util/timer.py

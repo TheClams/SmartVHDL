@@ -6,8 +6,8 @@ import functools
 # regular expression for signal/variable declaration:
 s_id_list = r'\w+\b([\s\w,]+)?'
 re_signal = r'(?i)^\s*(?P<tag>signal|variable)\s(?P<name>'+s_id_list+r'):\s*(?P<type>[^;]+)'
-re_port   = r'(?i)^(?P<name>'+s_id_list+r'):\s*(?P<port>in|out|inout)\s+(?P<type>[^;]+)'
-re_generic = r'(?i)^(?P<name>'+s_id_list+r'):\s*(?P<type>[\w\d\s\(\)]+)(?:\s*:=\s*(?P<value>[^;]+))?'
+re_port   = r'(?i)^\s*(?P<name>'+s_id_list+r'):\s*(?P<port>in|out|inout)\s+(?P<type>[^;]+)'
+re_generic = r'(?i)^\s*(?P<name>'+s_id_list+r'):\s*(?P<type>[\w\d\s\(\)]+)(?:\s*:=\s*(?P<value>[^;]+))?'
 re_const  = r'(?i)^\s*(?P<tag>constant)\s(?P<name>'+s_id_list+r'):\s*(?P<type>[\w\d\s\(\)]+)\s*:=\s*(?P<value>[^;]+)'
 re_record  = r'(?si)^\s*(?P<tag>type)\s(?P<name>'+s_id_list+r')\sis\s+(?P<type>record)\b(?P<content>.+?)(end\s+record)'
 re_entity  = r'(?si)^\s*(?P<type>entity)\s+(?P<name>\w+)\s+is\s+\b(?P<content>.+?)(end)'

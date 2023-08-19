@@ -255,7 +255,7 @@ class VhdlTypePopup :
             self.view.show_popup(s,location=location, flags=tooltip_flag, max_width=500, on_navigate=self.on_navigate)
 
     def get_type(self,var_name,region):
-        scope = self.view.scope_name(region.a)
+        scope = self.view.scope_name(region.b-1)
         ti = None
         txt = ''
         # print('[VhdlTypePopup:get_type] Var={}, region={}, scope={}'.format(var_name,region,scope))
