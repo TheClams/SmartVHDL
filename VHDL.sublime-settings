@@ -22,6 +22,7 @@
 	// Navigation config
 	"vhdl.hierarchy_new_window" : false,  // True to open a new window to display the module hierarchy
 	"vhdl.navbar_width" : 0.3, // Navigation bar width (default 0.2 means 20%)
+	"vhdl.navbar_font_size" : 10, // Navigation bar font size (if value is set to 0 then fontsize change is disabled)
 	"vhdl.navbar_show_port"   : true, // Show all ports of current module
 	"vhdl.navbar_show_signal" : true, // Show all signal declared in a module
 	"vhdl.navbar_show_process": true, // Show all named process declared in a module

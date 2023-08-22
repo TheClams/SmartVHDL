@@ -721,6 +721,7 @@ class VhdlShowNavbarCommand(sublime_plugin.TextCommand):
             navBar[wid]['settings']['show_process'] = self.view.settings().get('vhdl.navbar_show_process',False)
             navBar[wid]['settings']['show_alias'] = self.view.settings().get('vhdl.navbar_show_alias',False)
             navBar[wid]['settings']['show_const'] = self.view.settings().get('vhdl.navbar_show_const',False)
+            navBar[wid]['settings']['font_size'] = self.view.settings().get('vhdl.navbar_font_size',10)
         else :
             navBar[wid]['view'].run_command("select_all")
             navBar[wid]['view'].run_command("right_delete")
@@ -1042,6 +1043,12 @@ class VhdlUpdateNavbarCommand(sublime_plugin.EventListener):
             navbar_flag = w.settings().get('navbar-hdl-shared', 0)
             if navbar_flag & 1 == 0 :
                 view.run_command("verilog_show_navbar")
+
+        # Changes fontsize of navbar content.
+        if 'text.hierarchy' in scope:
+            fontSize = navBar[wid]['settings']['font_size']
+            if fontSize > 0:
+                view.settings().set("font_size", fontSize)
 
 # Update the navigation bar
 class VhdlToggleLockNavbarCommand(sublime_plugin.WindowCommand):
