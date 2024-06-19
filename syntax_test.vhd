@@ -10,6 +10,9 @@ architecture tmp_arc of tmp is
 --             ^^^^^^^^^ storage.type.ieee.std_logic_1164.vhdl
   signal rst : std_logic;
 
+  FOR ALL : my_blk
+    USE ENTITY work.my_blk(rtl);
+
 begin
 
   test_proc: process is

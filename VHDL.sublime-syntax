@@ -391,7 +391,7 @@ contexts:
   for_cfg_pattern:
     - match: \b(?i:for)\b
       scope: keyword.language.vhdl
-      push: [cfg_use,id_list]
+      push: [cfg_use,cfg_type,id_list]
   id_list:
     - match: '{{id}}'
     - match: \,
@@ -401,18 +401,23 @@ contexts:
       pop: true
     - match: '\S+?'
       scope: invalid.illegal.invalid.identifier.vhdl
+  cfg_type:
+    - match: '{{id}}'
+      scope:  storage.type.entity.reference.vhdl
+      pop: true
+    - match: '\S+?'
+      scope: invalid.illegal.invalid.identifier.vhdl
   cfg_use:
-    - match: '({{id}})\s+(use)\s+(entity\s+)?(?:({{id}})(\.))?({{id}})\s*(\()({{id}})(\))'
+    - match: '(?i:(use))\s+(?i:(entity)\s+)?(?:({{id}})(\.))?({{id}})\s*(\()({{id}})(\))'
       captures:
-        1: storage.type.entity.reference.vhdl
+        1: keyword.language.vhdl
         2: keyword.language.vhdl
-        3: keyword.language.vhdl
-        4: entity.name.tag.library.reference.vhdl
-        5: punctuation.vhdl
-        6: storage.type.entity.reference.vhdl
-        7: punctuation.vhdl
-        8: entity.name.tag.architecture.reference.vhdl
-        9: punctuation.vhdl
+        3: entity.name.tag.library.reference.vhdl
+        4: punctuation.vhdl
+        5: storage.type.entity.reference.vhdl
+        6: punctuation.vhdl
+        7: entity.name.tag.architecture.reference.vhdl
+        8: punctuation.vhdl
     - match: ';'
       scope: punctuation.vhdl
       pop: true
