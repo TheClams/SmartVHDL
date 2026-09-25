@@ -105,7 +105,7 @@ def type_info(view, t, region):
     if region:
         pos = view.line(region).b
     else:
-        pos = self.view.size()
+        pos = view.size()
     txt = view.substr(sublime.Region(0, pos))
     tti = vhdl_util.get_type_info(txt,t,4)
     if not tti or not tti['type']:

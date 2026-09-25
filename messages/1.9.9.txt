@@ -1,0 +1,10 @@
+SmartVHDL 1.9.9 Changelog:
+
+## Features ##
+  - Add control of navbar font size ("vhdl.navbar_font_size") [pull-request by rhast]
+
+## Bug Fixes ##
+  - Fix type_info crashing when called with no region
+  - Highlighting:
+    * fix configuration "for all"
+    * support "use entity" in lower case
